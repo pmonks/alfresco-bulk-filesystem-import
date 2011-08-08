@@ -1,0 +1,54 @@
+Release History
+---------------
+v1.0-RC1  released 2011-08-05
+     Fixed issue #6: Implement XML metadata loader
+     Fixed issue #9: Add support for specialising types, when a file is updated
+     Fixed issue #18: Add support for loading multiple versions of the same file
+     Fixed issue #21: Consider not halting bulk ingestion when I/O errors occur
+     Fixed issue #22: Test multi-byte characters in metadata
+     Fixed issue #24: Generalise the notion of input file filters
+     Fixed issue #44: Add metadata-specific information to Bulk Import Status
+     Fixed issue #52: Updating just properties only does 'root' folder
+     Fixed issue #64: Exception when aspects separated by ", "
+     Fixed issue #72: alfresco 3.4 support (official fix - had been patched in 0.11 earlier)
+     Fixed issue #74: Skipping files in UTF characters (note: was not reproducible, possibly due to other refactoring work in this release)
+     Fixed issue #76: Update YUI to 3.x
+     Significantly enhanced the test data used in testing.
+     Refactored the configuration to allow some aspects to be configured via alfresco-global.properties.
+
+v0.11 released 2011-01-07
+     Fixed issue #4: Content creation and modification dates are not settable
+     Fixed issue #49: source for class AbstractMetadataLoader is missing
+     Fixed issue #61: Add dedicated build script for Alfresco Community Edition NOTE: Not yet fully fixed due to external dependency (http://issues.alfresco.com/jira/browse/BDE-61)
+     Fixed issue #20: Add support for multi-valued properties to properties file metadata loader [thanks to andreadepirro and Stefan.Topfstedt for providing a patch for this]
+     Fixed issue #60: Verbiage: substitute the word "update" with the word "replace", to clarify the behaviour of the tool
+     Fixed issue #51: Files renamed via metadata cannot be re-imported. Error is: Duplicate child name not allowed
+
+v0.10 released 2010-10-11
+     Fixed issue #46: Error reported by importer
+     Worked around issue #45: browser caching makes import tool difficult to test
+
+v0.9 released 2010-10-01
+     Fixed issue #39: Ability to decorate existing content with metadata, without having to upload the content again
+     Fixed issue #40: Incorrect filename reported in error message
+     Fixed issue #43: Add XML template to status Web Script
+     Fixed issue #33: Need to strip whitespace from folder and filenames
+     Fixed issue #35: Provide more detailed logging of status during import
+     Fixed issue #12: Consider adding more information to the Bulk Import Status bean
+     Fixed issue #13: Investigate out-of-order counting in the bulk status bean
+     
+v0.8 released 2010-08-01
+     Fixed issue #5: Improve error reporting via status bean
+     Fixed issue #30: Can't update existing files
+     Fixed issue #31: 3.3 compatability?
+     Fixed issue #32: Maven dependencies
+     Fixed issue #38: Bad version number in .class file
+     Reduced refresh time for status page to 5 seconds
+     Added duration display to status page
+
+v0.7 released 2010-04-26
+     Fixed issue #25: Cannot import directly to "/Company Home"
+     Reduced default batch size to 100.
+
+<= v0.6 - release history not available
+

@@ -1,0 +1,2 @@
+Please run the "createTestData[.sh|.cmd]" script appropriate for your OS to generate the test data in this directory.
+Note: you _MUST_ have a Unicode-capable filesystem in order for this script to function correctly.
