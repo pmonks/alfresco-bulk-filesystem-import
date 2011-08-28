@@ -48,6 +48,7 @@ import org.alfresco.service.cmr.model.FileFolderService;
 import org.alfresco.service.cmr.model.FileInfo;
 import org.alfresco.service.cmr.model.FileNotFoundException;
 import org.alfresco.service.cmr.repository.ContentWriter;
+import org.alfresco.service.cmr.repository.InvalidNodeRefException;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.security.AccessStatus;
@@ -596,7 +597,26 @@ public abstract class AbstractBulkFilesystemImporter
         {
             if (log.isDebugEnabled()) log.debug("Adding properties to node '" + nodeRef.toString() + "':\n" + mapToString(metadata.getProperties()));
             
-            nodeService.addProperties(nodeRef, metadata.getProperties());
+            try
+            {
+                nodeService.addProperties(nodeRef, metadata.getProperties());
+            }
+            catch (final InvalidNodeRefException inre)
+            {
+                if (!nodeRef.equals(inre.getNodeRef()))
+                {
+                    // Caused by an invalid NodeRef in the metadata (e.g. in an association)
+                    throw new RuntimeException("Invalid nodeRef found in metadata for '" + getFileName(parentFile) + "'.  " +
+                                               "Probable cause: an association is being populated via metadata, but the " +
+                                               "NodeRef for the target of that association is invalid.  Please double check " +
+                                               "your metadata file and try again.", inre);
+                }
+                else
+                {
+                    // Logic bug in the BFSIT.  :-(
+                    throw inre;
+                }
+            }
         }
     }
         
