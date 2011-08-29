@@ -606,10 +606,10 @@ public abstract class AbstractBulkFilesystemImporter
                 if (!nodeRef.equals(inre.getNodeRef()))
                 {
                     // Caused by an invalid NodeRef in the metadata (e.g. in an association)
-                    throw new RuntimeException("Invalid nodeRef found in metadata for '" + getFileName(parentFile) + "'.  " +
-                                               "Probable cause: an association is being populated via metadata, but the " +
-                                               "NodeRef for the target of that association is invalid.  Please double check " +
-                                               "your metadata file and try again.", inre);
+                    throw new IllegalStateException("Invalid nodeRef found in metadata for '" + getFileName(parentFile) + "'.  " +
+                                                    "Probable cause: an association is being populated via metadata, but the " +
+                                                    "NodeRef for the target of that association ('" + inre.getNodeRef() + "') is invalid.  " +
+                                                    "Please double check your metadata file and try again.", inre);
                 }
                 else
                 {
