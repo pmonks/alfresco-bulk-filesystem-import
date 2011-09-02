@@ -357,7 +357,7 @@ public abstract class AbstractBulkFilesystemImporter
         
         result = node.getFirst();
             
-        if (result != null)
+        if (result != null && nodeState != NodeState.SKIPPED)
         {
             int numVersionProperties = 0;
             
@@ -433,7 +433,7 @@ public abstract class AbstractBulkFilesystemImporter
                 nodeState = NodeState.SKIPPED;
             }
         }
-        // We found the node in the repository.
+        // We found the node in the repository.  Make sure we return the NodeRef, so that recursive loading works (we need the NodeRef of all sub-spaces, even if we didn't create them).
         else
         {
             if (replaceExisting)
@@ -450,7 +450,6 @@ public abstract class AbstractBulkFilesystemImporter
                         if (log.isWarnEnabled()) log.warn("Skipping replacement of " + (isDirectory ? "Directory " : "File ") +
                                                           "'" + getFileName(importableItem.getHeadRevision().getContentFile()) + "'. " +
                                                           "The target node in the repository is a " + (targetNodeIsSpace ? "space node" : "content node") + ".");
-                        nodeRef   = null;
                         nodeState = NodeState.SKIPPED;
                     }
                 }
@@ -474,7 +473,6 @@ public abstract class AbstractBulkFilesystemImporter
             else
             {
                 if (log.isDebugEnabled()) log.debug("Found content node '" + nodeRef.toString() + "', but replaceExisting=false, so skipping it.");
-                nodeRef   = null;
                 nodeState = NodeState.SKIPPED;
             }
         }
