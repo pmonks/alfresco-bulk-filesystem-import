@@ -2,3 +2,7 @@
 .project
 .settings
 target
+src/test/data/SinglePassTests/FileNameTests/Punctuation
+src/test/data/SinglePassTests/FileNameTests/Unicode
+src/test/data/SinglePassTests/FileNameTests/file with a very very very very very very very very very very very very very very very very very very long name that is longer than 128 characters.txt
+src/test/data/SinglePassTests/FileNameTests/file with spaces in the name.txt
