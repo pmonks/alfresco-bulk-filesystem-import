@@ -525,8 +525,9 @@ public abstract class AbstractBulkFilesystemImporter
   
             // Note: PROP_VERSION_LABEL is a "reserved" property, and cannot be modified by custom code.
             // In other words, we can't use the version label on disk as the version label in Alfresco.  :-(
+            // See: http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=85
 //            versionProperties.put(ContentModel.PROP_VERSION_LABEL.toPrefixString(), String.valueOf(versionEntry.getVersion()));
-            versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);   // Load every version as a major version - might want to make this controllable in a future release..
+            versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);   // Load every version as a major version for now - see http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=84
             versionService.createVersion(nodeRef, versionProperties);
             
             result += metadata.getProperties().size() + 4;  // Add 4 for "standard" metadata properties read from filesystem
