@@ -23,13 +23,10 @@
   </util:list>
 
   <!-- Metadata loader to use. -->
-  <bean id="bfsit-metadata-loader"
-        class="org.alfresco.extension.bulkfilesystemimport.metadataloaders.XmlPropertiesFileMetadataLoader"
-        lazy-init="true">
-    <constructor-arg index="0" ref="ServiceRegistry" />
-  </bean>
+  <bean id="bfsit-metadata-loader" parent="bfsit-xml-properties-metadata-loader" />
   
   <!-- Importer implementation to use. -->
-  <bean id="bfsit-importer" parent="bfsit-async-single-threaded-bulk-filesystem-importer" />
+<!--  <bean id="bfsit-importer" parent="bfsit-async-single-threaded-bulk-filesystem-importer" />  -->  <!-- Single threaded importer -->
+  <bean id="bfsit-importer" parent="bfsit-multi-threaded-bulk-filesystem-importer" />   <!-- Multi-threaded importer -->
 
 </beans>

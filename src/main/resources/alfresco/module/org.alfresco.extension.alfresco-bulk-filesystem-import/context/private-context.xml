@@ -10,12 +10,24 @@
   
   <!-- Private beans for the bulk filesystem importer - don't mess with or override these unless you _really_ know what you're doing! -->
   
+  <!-- Status information -->
   <bean id="bfsit-status" class="org.alfresco.extension.bulkfilesystemimport.impl.BulkImportStatusImpl" />
   
+  <!-- Directory analyser -->
   <bean id="bfsit-directory-analyser" class="org.alfresco.extension.bulkfilesystemimport.impl.DirectoryAnalyserImpl">
     <constructor-arg index="0" ref="bfsit-metadata-loader" />
     <constructor-arg index="1" ref="bfsit-status" />
   </bean>
+  
+  <!-- OOTB metadata loaders -->
+  <bean id="bfsit-xml-properties-metadata-loader"
+    class="org.alfresco.extension.bulkfilesystemimport.metadataloaders.XmlPropertiesFileMetadataLoader"
+    lazy-init="true">
+    <constructor-arg index="0" ref="ServiceRegistry" />
+  </bean>
+  
+
+  <!-- Importer implementations -->
   
   <bean id="bfsit-sync-single-threaded-bulk-filesystem-importer"
         class="org.alfresco.extension.bulkfilesystemimport.impl.SingleThreadedBulkFilesystemImporter"
@@ -29,16 +41,39 @@
     <property name="batchWeight"       value="${alfresco-bulk-filesystem-import.batch.weight}" />
   </bean>
   
+  <bean id="bfsit-thread-factory"
+        class="org.alfresco.extension.bulkfilesystemimport.impl.BulkFilesystemImporterThreadFactory"
+        lazy-init="true" />
+  
   <bean id="bfsit-async-single-threaded-bulk-filesystem-importer"
         class="org.alfresco.extension.bulkfilesystemimport.impl.AsynchronousSingleThreadedBulkFilesystemImporter"
         lazy-init="true">
     <constructor-arg index="0" ref="ServiceRegistry" />      
     <constructor-arg index="1" ref="policyBehaviourFilter" /> 
     <constructor-arg index="2" ref="bfsit-status" />
+    <constructor-arg index="3" ref="bfsit-thread-factory" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
     <property name="batchWeight"       value="${alfresco-bulk-filesystem-import.batch.weight}" />
+  </bean>
+  
+  <bean id="bfsit-worker-thread-pool"
+        class="org.alfresco.extension.bulkfilesystemimport.impl.BulkFilesystemImporterThreadPoolExecutor"
+        lazy-init="true"
+        scope="prototype"/>
+  
+  <bean id="bfsit-multi-threaded-bulk-filesystem-importer"
+        class="org.alfresco.extension.bulkfilesystemimport.impl.MultiThreadedBulkFilesystemImporter"
+        lazy-init="true">
+    <constructor-arg index="0" ref="ServiceRegistry" />      
+    <constructor-arg index="1" ref="policyBehaviourFilter" /> 
+    <constructor-arg index="2" ref="bfsit-status" />
+    <property name="directoryAnalyser"     ref="bfsit-directory-analyser" />
+    <property name="importFilters"         ref="bfsit-import-filters" />
+    <property name="metadataLoader"        ref="bfsit-metadata-loader" />
+    <property name="batchWeight"           value="${alfresco-bulk-filesystem-import.batch.weight}" />
+    <lookup-method name="createThreadPool" bean="bfsit-worker-thread-pool"/>
   </bean>
   
 </beans>

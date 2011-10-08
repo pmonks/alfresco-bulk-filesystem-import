@@ -26,6 +26,7 @@
 package org.alfresco.extension.bulkfilesystemimport.impl;
 
 import java.io.File;
+import java.util.concurrent.ThreadFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,11 +51,16 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
     private final static Log log = LogFactory.getLog(AsynchronousSingleThreadedBulkFilesystemImporter.class);
     
     
+    private final ThreadFactory threadFactory;
+    
     public AsynchronousSingleThreadedBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
                                                             final BehaviourFilter      behaviourFilter,
-                                                            final BulkImportStatusImpl importStatus)
+                                                            final BulkImportStatusImpl importStatus,
+                                                            final ThreadFactory        threadFactory)
     {
         super(serviceRegistry, behaviourFilter, importStatus);
+        
+        this.threadFactory = threadFactory;
     }
     
 
@@ -73,6 +79,7 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
 
         backgroundLogic = new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -81,6 +88,7 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
                     
                     AuthenticationUtil.runAs(new RunAsWork<Object>()
                     {
+                        @Override
                         public Object doWork()
                             throws Exception
                         {
@@ -150,8 +158,7 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
             }
         };
         
-        backgroundThread = new Thread(backgroundLogic, "BulkFilesystemImport-BackgroundThread");
-        backgroundThread.setDaemon(true);
+        backgroundThread = threadFactory.newThread(backgroundLogic);
         backgroundThread.start();
     }
     

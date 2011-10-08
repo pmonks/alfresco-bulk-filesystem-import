@@ -285,6 +285,13 @@ public abstract class AbstractBulkFilesystemImporter
             for (final List<ImportableItem> batch : batches)
             {
                 result.addAll(importBatchInTxn(target, sourceRoot, batch, replaceExisting));
+
+                // If we're running on a background thread that's been interrupted, terminate early
+                if (Thread.interrupted())
+                {
+                    if (log.isWarnEnabled()) log.warn(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
+                    break;
+                }
             }
         }
         
@@ -302,6 +309,7 @@ public abstract class AbstractBulkFilesystemImporter
 
         result.addAll(txnHelper.doInTransaction(new RetryingTransactionCallback<List<Pair<NodeRef, File>>>()
             {
+                @Override
                 public List<Pair<NodeRef, File>> execute()
                 {
                     // Disable the auditable aspect's behaviours for this transaction, to allow creation & modification dates to be set 
