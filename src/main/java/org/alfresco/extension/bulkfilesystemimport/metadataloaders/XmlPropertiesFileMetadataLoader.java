@@ -90,7 +90,6 @@ import org.alfresco.service.ServiceRegistry;
  * </ul>
  *
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id: PropertiesFileMetadataLoader.java 115 2011-08-03 22:25:26Z pmonks@gmail.com $
  * @see MetadataLoader
  */
 public final class XmlPropertiesFileMetadataLoader

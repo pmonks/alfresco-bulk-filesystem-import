@@ -86,11 +86,10 @@ import org.alfresco.service.ServiceRegistry;
  * </ul>
  *
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id: PropertiesFileMetadataLoader.java 141 2011-08-05 21:11:40Z pmonks@gmail.com $
  * @see MetadataLoader
  */
 public final class PropertiesFileMetadataLoader
-extends AbstractMapBasedMetadataLoader
+    extends AbstractMapBasedMetadataLoader
 {
     private final static Log log = LogFactory.getLog(PropertiesFileMetadataLoader.class);
     

@@ -43,7 +43,6 @@ import org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter;
  * Web Script class that provides status information on the bulk filesystem import process.
  *
  * @author Peter Monks (peter.monks@alfresco.com)
- * @version $Id: BulkFilesystemImportStatusWebScript.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public class BulkFilesystemImportStatusWebScript
     extends DeclarativeWebScript

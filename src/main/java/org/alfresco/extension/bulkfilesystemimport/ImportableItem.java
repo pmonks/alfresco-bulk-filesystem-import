@@ -40,8 +40,6 @@ import org.apache.commons.lang.builder.ToStringBuilder;
  * that represent a single node (content OR space) in the repository.
  *
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id: ImportableItem.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
- *
  */
 public final class ImportableItem
 {

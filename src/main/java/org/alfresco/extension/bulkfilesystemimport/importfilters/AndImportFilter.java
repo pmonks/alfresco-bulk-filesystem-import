@@ -34,7 +34,6 @@ import org.alfresco.extension.bulkfilesystemimport.ImportFilter;
  * This class provides an <code>ImportFilter</code> that only returns true if all of the configured <code>ImportFilter</code>s return true.
  *
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id: AndImportFilter.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public class AndImportFilter
     implements ImportFilter

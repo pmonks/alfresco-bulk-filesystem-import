@@ -851,4 +851,37 @@ public abstract class AbstractBulkFilesystemImporter
         return(result);
     }
     
+    
+    /**
+     * Logs a nice summary of the current status of an import.  Primarily useful for after an import succeeds.
+     * 
+     * @param importStatus The import status to log.
+     */
+    protected final void logStatus(final BulkImportStatus importStatus)
+    {
+        if (log.isDebugEnabled())
+        {
+            log.debug("Bulk Import Statistics:" +
+                      "Scanned:" +
+                      "\n\tFiles:                  " + importStatus.getNumberOfFilesScanned() +
+                      "\n\tFolders:                " + importStatus.getNumberOfFoldersScanned() +
+                      "Read:" +
+                      "\n\tContent files:          " + importStatus.getNumberOfContentFilesRead() +
+                      " (" +importStatus.getNumberOfContentBytesRead() + " bytes)" +
+                      "\n\tMetadata files:         " + importStatus.getNumberOfMetadataFilesRead() +
+                      " (" + importStatus.getNumberOfMetadataBytesRead() + " bytes)" +
+                      "\n\tContent version files:  " + importStatus.getNumberOfContentVersionFilesRead() +
+                      " (" + importStatus.getNumberOfContentVersionBytesRead() + " bytes)" +
+                      "\n\tMetadata version files: " + importStatus.getNumberOfMetadataVersionFilesRead() +
+                      " (" + importStatus.getNumberOfMetadataVersionBytesRead() + " bytes)" +
+                      "Written:" +
+                      "\n\tContent nodes created:  " + importStatus.getNumberOfContentNodesCreated() +
+                      "\n\tContent nodes replaced: " + importStatus.getNumberOfContentNodesReplaced() +
+                      "\n\tContent nodes skipped:  " + importStatus.getNumberOfContentNodesSkipped() +
+                      "\n\tSpace nodes created:    " + importStatus.getNumberOfSpaceNodesCreated() +
+                      "\n\tSpace nodes replaced:   " + importStatus.getNumberOfSpaceNodesReplaced() +
+                      "\n\tSpace nodes skipped:    " + importStatus.getNumberOfSpaceNodesSkipped());
+        }
+    }
+    
 }

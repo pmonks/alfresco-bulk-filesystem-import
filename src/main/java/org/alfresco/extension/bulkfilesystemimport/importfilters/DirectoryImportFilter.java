@@ -33,7 +33,6 @@ import org.alfresco.extension.bulkfilesystemimport.ImportFilter;
  * This class is an <code>ImportFilter</code> that filters out directories.
  *
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id: DirectoryImportFilter.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public class DirectoryImportFilter
     implements ImportFilter

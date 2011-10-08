@@ -28,8 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * This ThreadFactory provides human-readable names for threads initiated by the Bulk Filesystem Importer.
  *
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id$
- *
  */
 public class BulkFilesystemImporterThreadFactory
     implements ThreadFactory

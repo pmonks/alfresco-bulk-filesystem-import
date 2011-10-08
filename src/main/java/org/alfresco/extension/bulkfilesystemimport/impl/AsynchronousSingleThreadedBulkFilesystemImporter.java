@@ -43,7 +43,6 @@ import org.alfresco.service.cmr.repository.NodeRef;
  * immediately returns, and can then poll the status via the getImportStatus method).
  *
  * @author Peter Monks (peter.monks@alfresco.com)
- * @version $Id: AsynchronousSingleThreadedBulkFilesystemImporter.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public class AsynchronousSingleThreadedBulkFilesystemImporter
     extends SingleThreadedBulkFilesystemImporter
@@ -101,30 +100,7 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
                                 importStatus.stopImport();
 
                                 log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
-                                
-                                if (log.isDebugEnabled())
-                                {
-                                    log.debug("Bulk Import Statistics:" +
-                                              "Scanned:" +
-                                              "\n\tFiles:                  " + importStatus.getNumberOfFilesScanned() +
-                                              "\n\tFolders:                " + importStatus.getNumberOfFoldersScanned() +
-                                              "Read:" +
-                                              "\n\tContent files:          " + importStatus.getNumberOfContentFilesRead() +
-                                              " (" +importStatus.getNumberOfContentBytesRead() + " bytes)" +
-                                              "\n\tMetadata files:         " + importStatus.getNumberOfMetadataFilesRead() +
-                                              " (" + importStatus.getNumberOfMetadataBytesRead() + " bytes)" +
-                                              "\n\tContent version files:  " + importStatus.getNumberOfContentVersionFilesRead() +
-                                              " (" + importStatus.getNumberOfContentVersionBytesRead() + " bytes)" +
-                                              "\n\tMetadata version files: " + importStatus.getNumberOfMetadataVersionFilesRead() +
-                                              " (" + importStatus.getNumberOfMetadataVersionBytesRead() + " bytes)" +
-                                              "Written:" +
-                                              "\n\tContent nodes created:  " + importStatus.getNumberOfContentNodesCreated() +
-                                              "\n\tContent nodes replaced: " + importStatus.getNumberOfContentNodesReplaced() +
-                                              "\n\tContent nodes skipped:  " + importStatus.getNumberOfContentNodesSkipped() +
-                                              "\n\tSpace nodes created:    " + importStatus.getNumberOfSpaceNodesCreated() +
-                                              "\n\tSpace nodes replaced:   " + importStatus.getNumberOfSpaceNodesReplaced() +
-                                              "\n\tSpace nodes skipped:    " + importStatus.getNumberOfSpaceNodesSkipped());
-                                }
+                                logStatus(importStatus);
                             }
                             catch (final Throwable t)
                             {

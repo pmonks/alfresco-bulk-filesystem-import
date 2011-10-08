@@ -50,7 +50,6 @@ import org.alfresco.service.namespace.QName;
  * from a <code>java.util.Map</code>, regardless of where it came from.
  *
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id$
  * @see MetadataLoader
  */
 abstract class AbstractMapBasedMetadataLoader

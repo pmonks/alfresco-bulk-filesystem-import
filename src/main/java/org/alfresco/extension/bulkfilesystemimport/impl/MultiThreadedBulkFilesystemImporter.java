@@ -27,8 +27,6 @@ package org.alfresco.extension.bulkfilesystemimport.impl;
 
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -48,7 +46,6 @@ import org.alfresco.util.Pair;
  * immediately returns, and can then poll the status via the getImportStatus method).
  *
  * @author Peter Monks (peter.monks@alfresco.com)
- * @version $Id: AsynchronousSingleThreadedBulkFilesystemImporter.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is abstract because it uses Spring's "lookup-method" mechanism
     extends AbstractBulkFilesystemImporter
@@ -152,31 +149,8 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                             importStatus.stopImport();
                             
                             if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' succeeded.");
+                            logStatus(importStatus);
                             
-                            if (log.isDebugEnabled())
-                            {
-                                log.debug("Bulk Import Statistics:" +
-                                          "Scanned:" +
-                                          "\n\tFiles:                  " + importStatus.getNumberOfFilesScanned() +
-                                          "\n\tFolders:                " + importStatus.getNumberOfFoldersScanned() +
-                                          "Read:" +
-                                          "\n\tContent files:          " + importStatus.getNumberOfContentFilesRead() +
-                                          " (" +importStatus.getNumberOfContentBytesRead() + " bytes)" +
-                                          "\n\tMetadata files:         " + importStatus.getNumberOfMetadataFilesRead() +
-                                          " (" + importStatus.getNumberOfMetadataBytesRead() + " bytes)" +
-                                          "\n\tContent version files:  " + importStatus.getNumberOfContentVersionFilesRead() +
-                                          " (" + importStatus.getNumberOfContentVersionBytesRead() + " bytes)" +
-                                          "\n\tMetadata version files: " + importStatus.getNumberOfMetadataVersionFilesRead() +
-                                          " (" + importStatus.getNumberOfMetadataVersionBytesRead() + " bytes)" +
-                                          "Written:" +
-                                          "\n\tContent nodes created:  " + importStatus.getNumberOfContentNodesCreated() +
-                                          "\n\tContent nodes replaced: " + importStatus.getNumberOfContentNodesReplaced() +
-                                          "\n\tContent nodes skipped:  " + importStatus.getNumberOfContentNodesSkipped() +
-                                          "\n\tSpace nodes created:    " + importStatus.getNumberOfSpaceNodesCreated() +
-                                          "\n\tSpace nodes replaced:   " + importStatus.getNumberOfSpaceNodesReplaced() +
-                                          "\n\tSpace nodes skipped:    " + importStatus.getNumberOfSpaceNodesSkipped());
-                            }
-
                             break; // Drop out of the while loop, thereby terminating the thread
                         }
                         else

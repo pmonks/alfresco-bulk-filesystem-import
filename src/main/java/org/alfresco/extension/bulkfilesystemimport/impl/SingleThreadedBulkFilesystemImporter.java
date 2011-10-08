@@ -42,7 +42,6 @@ import org.alfresco.util.Pair;
  * import is complete).
  *
  * @author Peter Monks (peter.monks@alfresco.com)
- * @version $Id: SingleThreadedBulkFilesystemImporter.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public class SingleThreadedBulkFilesystemImporter
     extends AbstractBulkFilesystemImporter
@@ -74,6 +73,7 @@ public class SingleThreadedBulkFilesystemImporter
             importStatus.stopImport();
 
             log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
+            logStatus(importStatus);
         }
         catch (final Throwable e)
         {

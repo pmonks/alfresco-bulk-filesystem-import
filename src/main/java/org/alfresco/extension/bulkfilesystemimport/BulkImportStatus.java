@@ -32,7 +32,6 @@ import java.util.Date;
  * Interface defining which information can be obtained from the Bulk Filesystem Import engine.
  *
  * @author Peter Monks (peter.monks@alfresco.com)
- * @version $Id: BulkImportStatus.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public interface BulkImportStatus
 {

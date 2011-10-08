@@ -33,7 +33,6 @@ import org.alfresco.extension.bulkfilesystemimport.ImportFilter;
  * This class is an <code>ImportFilter</code> that filters out files.
  *
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id: FileImportFilter.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public class FileImportFilter
     implements ImportFilter

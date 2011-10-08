@@ -26,23 +26,19 @@
 package org.alfresco.extension.bulkfilesystemimport.impl;
 
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.Date;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
 import org.alfresco.extension.bulkfilesystemimport.ImportableItem;
-import org.alfresco.service.namespace.QName;
 
 
 /**
  * Thread-safe implementation of Bulk Import Status.
  *
  * @author Peter Monks (peter.monks@alfresco.com)
- * @version $Id: BulkImportStatusImpl.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  * @see org.alfresco.extension.bulkfilesystemimport.BulkImportStatus
  */
 public class BulkImportStatusImpl

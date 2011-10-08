@@ -30,7 +30,6 @@ package org.alfresco.extension.bulkfilesystemimport.impl;
  * Utility class for containing three things that aren't like each other.
  * 
  * @author Peter Monks (peter.monks@alfresco.com)
- * @version $Id: Triple.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public final class Triple<T, U, V>
 {

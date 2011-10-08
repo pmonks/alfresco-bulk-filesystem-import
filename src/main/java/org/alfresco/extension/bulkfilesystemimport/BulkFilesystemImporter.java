@@ -34,7 +34,6 @@ import org.alfresco.service.cmr.repository.NodeRef;
  * Interface defining a bulk filesystem importer.
  *
  * @author Peter Monks (peter.monks@alfresco.com)
- * @version $Id: BulkFilesystemImporter.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public interface BulkFilesystemImporter
 {

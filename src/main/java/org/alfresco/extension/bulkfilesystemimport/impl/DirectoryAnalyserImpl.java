@@ -49,7 +49,6 @@ import org.alfresco.extension.bulkfilesystemimport.MetadataLoader;
  * which a directory listing of files is broken up into ImportableItems.
  * 
  * @author Peter Monks (pmonks@alfresco.com)
- * @version $Id: DirectoryAnalyserImpl.java 116 2011-08-03 23:55:41Z pmonks@gmail.com $
  */
 public final class DirectoryAnalyserImpl
     implements DirectoryAnalyser
