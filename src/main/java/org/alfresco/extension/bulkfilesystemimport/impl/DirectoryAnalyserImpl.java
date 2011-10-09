@@ -29,8 +29,10 @@ package org.alfresco.extension.bulkfilesystemimport.impl;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,9 +77,10 @@ public final class DirectoryAnalyserImpl
      */
     public AnalysedDirectory analyseDirectory(final File directory)
     {
-        AnalysedDirectory result = new AnalysedDirectory();
-        long              start;
-        long              end;
+        final AnalysedDirectory        result          = new AnalysedDirectory();
+        final Map<File,ImportableItem> importableItems = new HashMap<File,ImportableItem>();
+        long                           start;
+        long                           end;
         
         if (log.isDebugEnabled()) log.debug("Analysing directory " + AbstractBulkFilesystemImporter.getFileName(directory) + "...");
 
@@ -85,29 +88,26 @@ public final class DirectoryAnalyserImpl
         result.originalListing = Arrays.asList(directory.listFiles());
         end = System.nanoTime();
         if (log.isTraceEnabled()) log.trace("List directory took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
-        result.importableItems = new ArrayList<ImportableItem>();
 
         start = System.nanoTime();
         // Build up the list of ImportableItems from the directory listing
         for (final File file : result.originalListing)
         {
-//            if (log.isTraceEnabled()) log.trace("Scanning file " + AbstractBulkFilesystemImporter.getFileName(file) + "...");
-            
             if (file.canRead())
             {
                 if (isVersionFile(file))
                 {
-                    addVersionFile(result.importableItems, file);
+                    addVersionFile(importableItems, file);
                     importStatus.incrementNumberOfFilesScanned();
                 }
                 else if (isMetadataFile(file))
                 {
-                    addMetadataFile(result.importableItems, file);
+                    addMetadataFile(importableItems, file);
                     importStatus.incrementNumberOfFilesScanned();
                 }
                 else
                 {
-                    boolean isDirectory = addParentFile(result.importableItems, file);
+                    boolean isDirectory = addParentFile(importableItems, file);
                     
                     if (isDirectory)
                     {
@@ -121,13 +121,15 @@ public final class DirectoryAnalyserImpl
             }
             else
             {
-                if (log.isWarnEnabled()) { log.warn("Skipping unreadable file '" + AbstractBulkFilesystemImporter.getFileName(file) + "'."); }
+                if (log.isWarnEnabled()) log.warn("Skipping unreadable file '" + AbstractBulkFilesystemImporter.getFileName(file) + "'.");
                 
                 importStatus.incrementNumberOfUnreadableEntries();
             }
         }
         end = System.nanoTime();
         if (log.isTraceEnabled()) log.trace("Build list of importable items took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
+
+        result.importableItems = new ArrayList<ImportableItem>(importableItems.values());
 
         start = System.nanoTime();
         // Finally, remove any items from the list that aren't valid (don't have either a
@@ -173,7 +175,7 @@ public final class DirectoryAnalyserImpl
     }
 
 
-    private void addVersionFile(final List<ImportableItem> importableItems, final File versionFile)
+    private void addVersionFile(final Map<File,ImportableItem> importableItems, final File versionFile)
     {
         File    parentContentFile = getParentOfVersionFile(versionFile);
         boolean isContentVersion  = false;
@@ -203,7 +205,7 @@ public final class DirectoryAnalyserImpl
     }
 
 
-    private void addMetadataFile(final List<ImportableItem> importableItems, final File metadataFile)
+    private void addMetadataFile(final Map<File,ImportableItem> importableItems, final File metadataFile)
     {
         final File parentContentfile = getParentOfMetadatafile(metadataFile);
 
@@ -213,7 +215,7 @@ public final class DirectoryAnalyserImpl
     }
 
 
-    private boolean addParentFile(final List<ImportableItem> importableItems, final File contentFile)
+    private boolean addParentFile(final Map<File,ImportableItem> importableItems, final File contentFile)
     {
         ImportableItem importableItem = findOrCreateImportableItem(importableItems, contentFile);
 
@@ -223,39 +225,17 @@ public final class DirectoryAnalyserImpl
     }
 
 
-    private ImportableItem findOrCreateImportableItem(final List<ImportableItem> importableItems,
-                                                      final File                 contentFile)
+    private ImportableItem findOrCreateImportableItem(final Map<File,ImportableItem> importableItems,
+                                                      final File                     contentFile)
     {
-        ImportableItem result = findImportableItem(importableItems, contentFile);
+        ImportableItem result = importableItems.get(contentFile);
 
         // We didn't find it, so create it
         if (result == null)
         {
             result = new ImportableItem();
             result.getHeadRevision().setContentFile(contentFile);
-            importableItems.add(result);
-        }
-
-        return(result);
-    }
-
-
-    private ImportableItem findImportableItem(final List<ImportableItem> importableItems, final File contentFile)
-    {
-        ImportableItem result = null;
-
-        if (contentFile == null)
-        {
-            throw new IllegalStateException("Cannot call findOrCreateImportableItem with null key");
-        }
-
-        for (final ImportableItem importableItem : importableItems)
-        {
-            if (contentFile.equals(importableItem.getHeadRevision().getContentFile()))
-            {
-                result = importableItem;
-                break;
-            }
+            importableItems.put(contentFile, result);
         }
 
         return(result);
@@ -281,6 +261,9 @@ public final class DirectoryAnalyserImpl
     {
         ImportableItem.VersionedContentAndMetadata result = null;
 
+        // Note: it would be better to store VersionEntries in a Map as well, and convert to a list later on, but in most
+        // cases version histories are small enough that we can get away with the inefficiencies of finding items in lists.
+        // See http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=91 for a related problem.
         if (importableItem.hasVersionEntries())
         {
             for (final ImportableItem.VersionedContentAndMetadata versionEntry : importableItem.getVersionEntries())

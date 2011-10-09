@@ -687,6 +687,7 @@ public abstract class AbstractBulkFilesystemImporter
     
     
     //####TODO: refactor this out into a separate utility class
+    // Note: this method is *expensive*, primarily due to getCanonicalPath requiring IO (i.e. it hits disk)
     public final static String getFileName(final File file)
     {
         String result = null;

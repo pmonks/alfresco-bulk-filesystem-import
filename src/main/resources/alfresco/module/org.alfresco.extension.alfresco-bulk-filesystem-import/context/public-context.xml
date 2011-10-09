@@ -26,7 +26,7 @@
   <bean id="bfsit-metadata-loader" parent="bfsit-xml-properties-metadata-loader" />
   
   <!-- Importer implementation to use. -->
-<!--  <bean id="bfsit-importer" parent="bfsit-async-single-threaded-bulk-filesystem-importer" />  -->  <!-- Single threaded importer -->
-  <bean id="bfsit-importer" parent="bfsit-multi-threaded-bulk-filesystem-importer" />   <!-- Multi-threaded importer -->
+<!--    <bean id="bfsit-importer" parent="bfsit-async-single-threaded-bulk-filesystem-importer" /> -->  <!-- Single threaded importer -->
+  <bean id="bfsit-importer" parent="bfsit-multi-threaded-bulk-filesystem-importer" />  <!-- Multi-threaded importer -->
 
 </beans>
