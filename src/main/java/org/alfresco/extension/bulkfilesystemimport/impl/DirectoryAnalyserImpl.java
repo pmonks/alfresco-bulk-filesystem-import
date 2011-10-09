@@ -76,16 +76,22 @@ public final class DirectoryAnalyserImpl
     public AnalysedDirectory analyseDirectory(final File directory)
     {
         AnalysedDirectory result = new AnalysedDirectory();
+        long              start;
+        long              end;
         
         if (log.isDebugEnabled()) log.debug("Analysing directory " + AbstractBulkFilesystemImporter.getFileName(directory) + "...");
 
+        start = System.nanoTime();
         result.originalListing = Arrays.asList(directory.listFiles());
+        end = System.nanoTime();
+        if (log.isTraceEnabled()) log.trace("List directory took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
         result.importableItems = new ArrayList<ImportableItem>();
 
+        start = System.nanoTime();
         // Build up the list of ImportableItems from the directory listing
         for (final File file : result.originalListing)
         {
-            if (log.isTraceEnabled()) log.trace("Scanning file " + AbstractBulkFilesystemImporter.getFileName(file) + "...");
+//            if (log.isTraceEnabled()) log.trace("Scanning file " + AbstractBulkFilesystemImporter.getFileName(file) + "...");
             
             if (file.canRead())
             {
@@ -120,7 +126,10 @@ public final class DirectoryAnalyserImpl
                 importStatus.incrementNumberOfUnreadableEntries();
             }
         }
+        end = System.nanoTime();
+        if (log.isTraceEnabled()) log.trace("Build list of importable items took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
 
+        start = System.nanoTime();
         // Finally, remove any items from the list that aren't valid (don't have either a
         // contentFile or a metadataFile)
         Iterator<ImportableItem> iter = result.importableItems.iterator();
@@ -134,6 +143,8 @@ public final class DirectoryAnalyserImpl
                 iter.remove();
             }
         }
+        end = System.nanoTime();
+        if (log.isTraceEnabled()) log.trace("Filter invalid importable items took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
 
         if (log.isDebugEnabled()) log.debug("Finished analysing directory " + AbstractBulkFilesystemImporter.getFileName(directory) + ".");
 

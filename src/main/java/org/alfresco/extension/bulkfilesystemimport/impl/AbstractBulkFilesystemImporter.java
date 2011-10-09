@@ -859,13 +859,13 @@ public abstract class AbstractBulkFilesystemImporter
      */
     protected final void logStatus(final BulkImportStatus importStatus)
     {
-        if (log.isDebugEnabled())
+        if (log.isInfoEnabled())
         {
-            log.debug("Bulk Import Statistics:" +
-                      "Scanned:" +
+            log.info("Bulk Import Statistics:" +
+                      "\nScanned:" +
                       "\n\tFiles:                  " + importStatus.getNumberOfFilesScanned() +
                       "\n\tFolders:                " + importStatus.getNumberOfFoldersScanned() +
-                      "Read:" +
+                      "\nRead:" +
                       "\n\tContent files:          " + importStatus.getNumberOfContentFilesRead() +
                       " (" +importStatus.getNumberOfContentBytesRead() + " bytes)" +
                       "\n\tMetadata files:         " + importStatus.getNumberOfMetadataFilesRead() +
@@ -874,7 +874,7 @@ public abstract class AbstractBulkFilesystemImporter
                       " (" + importStatus.getNumberOfContentVersionBytesRead() + " bytes)" +
                       "\n\tMetadata version files: " + importStatus.getNumberOfMetadataVersionFilesRead() +
                       " (" + importStatus.getNumberOfMetadataVersionBytesRead() + " bytes)" +
-                      "Written:" +
+                      "\nWritten:" +
                       "\n\tContent nodes created:  " + importStatus.getNumberOfContentNodesCreated() +
                       "\n\tContent nodes replaced: " + importStatus.getNumberOfContentNodesReplaced() +
                       "\n\tContent nodes skipped:  " + importStatus.getNumberOfContentNodesSkipped() +

@@ -13,3 +13,5 @@ cd ../FileVolumeTests
 
 cd ../FileSizeTests
 ./createTestData.sh
+
+cd ..
