@@ -47,6 +47,11 @@ public class BulkFilesystemImporterThreadPoolExecutor
         this(DEFAULT_CORE_POOL_SIZE, DEFAULT_MAXIMUM_CORE_POOL_SIZE, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_TIME_UNIT);
     }
     
+    public BulkFilesystemImporterThreadPoolExecutor(final int corePoolSize, final int maximumPoolSize)
+    {
+        this(corePoolSize, maximumPoolSize, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_TIME_UNIT);
+    }
+    
     public BulkFilesystemImporterThreadPoolExecutor(final int corePoolSize, final int maximumPoolSize, final long keepAliveTime, final TimeUnit keepAliveTimeUnit)
     {
         super(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveTimeUnit, new LinkedBlockingQueue<Runnable>(), new BulkFilesystemImporterThreadFactory());

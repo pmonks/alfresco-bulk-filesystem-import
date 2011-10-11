@@ -67,12 +67,8 @@
     <property name="batchWeight"       value="${alfresco-bulk-filesystem-import.batch.weight}" />
   </bean>
   
-  <bean id="bfsit-worker-thread-pool"
-        class="org.alfresco.extension.bulkfilesystemimport.impl.BulkFilesystemImporterThreadPoolExecutor"
-        lazy-init="true"
-        scope="prototype"/>
-  
   <bean id="bfsit-multi-threaded-bulk-filesystem-importer"
+        abstract="true"
         class="org.alfresco.extension.bulkfilesystemimport.impl.MultiThreadedBulkFilesystemImporter"
         lazy-init="true">
     <constructor-arg index="0" ref="ServiceRegistry" />      
@@ -82,7 +78,35 @@
     <property name="importFilters"         ref="bfsit-import-filters" />
     <property name="metadataLoader"        ref="bfsit-metadata-loader" />
     <property name="batchWeight"           value="${alfresco-bulk-filesystem-import.batch.weight}" />
-    <lookup-method name="createThreadPool" bean="bfsit-worker-thread-pool"/>
+  </bean>
+  
+  <!-- An auto-sized thread pool - coreSize = number of CPU cores, maxSize = coreSize * 2 -->
+  <bean id="bfsit-worker-thread-pool-autosize"
+        class="org.alfresco.extension.bulkfilesystemimport.impl.BulkFilesystemImporterThreadPoolExecutor"
+        lazy-init="true"
+        scope="prototype"/>
+  
+  <bean id="bfsit-multi-threaded-bulk-filesystem-importer-autosize-threadpool"
+        parent="bfsit-multi-threaded-bulk-filesystem-importer"
+        lazy-init="true">
+    <lookup-method name="createThreadPool" bean="bfsit-worker-thread-pool-autosize"/>
+  </bean>
+  
+  <!-- A manually-sized thread pool -->
+  <bean id="bfsit-worker-thread-pool-manualsize"
+        class="org.alfresco.extension.bulkfilesystemimport.impl.BulkFilesystemImporterThreadPoolExecutor"
+        lazy-init="true"
+        scope="prototype">
+    <constructor-arg index="0" value="${alfresco-bulk-filesystem-import.threadpool.size.core}" />         <!-- Core Thread Pool Size -->
+    <constructor-arg index="1" value="${alfresco-bulk-filesystem-import.threadpool.size.max}" />          <!-- Maximum Thread Pool Size -->
+    <constructor-arg index="2" value="${alfresco-bulk-filesystem-import.threadpool.keepAlive.time}" />    <!-- Keep alive time -->
+    <constructor-arg index="3" value="${alfresco-bulk-filesystem-import.threadpool.keepAlive.units}" />   <!-- Keep alive time units - see http://download.oracle.com/javase/6/docs/api/java/util/concurrent/TimeUnit.html for allowed values -->
+  </bean>
+  
+  <bean id="bfsit-multi-threaded-bulk-filesystem-importer-manualsize-threadpool"
+        parent="bfsit-multi-threaded-bulk-filesystem-importer"
+        lazy-init="true">
+    <lookup-method name="createThreadPool" bean="bfsit-worker-thread-pool-manualsize"/>
   </bean>
   
 </beans>
