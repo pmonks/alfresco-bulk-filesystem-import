@@ -80,7 +80,7 @@
     <property name="batchWeight"           value="${alfresco-bulk-filesystem-import.batch.weight}" />
   </bean>
   
-  <!-- An auto-sized thread pool - coreSize = number of CPU cores, maxSize = coreSize * 2 -->
+  <!-- An auto-sized thread pool - coreSize = number of processors, maxSize = coreSize * 2 -->
   <bean id="bfsit-worker-thread-pool-autosize"
         class="org.alfresco.extension.bulkfilesystemimport.impl.BulkFilesystemImporterThreadPoolExecutor"
         lazy-init="true"
