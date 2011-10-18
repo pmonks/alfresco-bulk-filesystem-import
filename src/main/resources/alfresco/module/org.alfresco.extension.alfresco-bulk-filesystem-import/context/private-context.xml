@@ -43,7 +43,8 @@
         lazy-init="true">
     <constructor-arg index="0" ref="ServiceRegistry" />
     <constructor-arg index="1" ref="policyBehaviourFilter" />
-    <constructor-arg index="2" ref="bfsit-status" />
+    <constructor-arg index="2" ref="fileContentStore" />
+    <constructor-arg index="3" ref="bfsit-status" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
@@ -59,8 +60,9 @@
         lazy-init="true">
     <constructor-arg index="0" ref="ServiceRegistry" />      
     <constructor-arg index="1" ref="policyBehaviourFilter" /> 
-    <constructor-arg index="2" ref="bfsit-status" />
-    <constructor-arg index="3" ref="bfsit-thread-factory" />
+    <constructor-arg index="2" ref="fileContentStore" />
+    <constructor-arg index="3" ref="bfsit-status" />
+    <constructor-arg index="4" ref="bfsit-thread-factory" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
@@ -73,11 +75,12 @@
         lazy-init="true">
     <constructor-arg index="0" ref="ServiceRegistry" />      
     <constructor-arg index="1" ref="policyBehaviourFilter" /> 
-    <constructor-arg index="2" ref="bfsit-status" />
-    <property name="directoryAnalyser"     ref="bfsit-directory-analyser" />
-    <property name="importFilters"         ref="bfsit-import-filters" />
-    <property name="metadataLoader"        ref="bfsit-metadata-loader" />
-    <property name="batchWeight"           value="${alfresco-bulk-filesystem-import.batch.weight}" />
+    <constructor-arg index="2" ref="fileContentStore" />
+    <constructor-arg index="3" ref="bfsit-status" />
+    <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
+    <property name="importFilters"     ref="bfsit-import-filters" />
+    <property name="metadataLoader"    ref="bfsit-metadata-loader" />
+    <property name="batchWeight"       value="${alfresco-bulk-filesystem-import.batch.weight}" />
   </bean>
   
   <!-- An auto-sized thread pool - coreSize = number of processors, maxSize = coreSize * 2 -->

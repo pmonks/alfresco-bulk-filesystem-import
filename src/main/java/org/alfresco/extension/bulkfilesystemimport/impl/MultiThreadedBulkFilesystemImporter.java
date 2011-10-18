@@ -33,6 +33,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.alfresco.repo.content.ContentStore;
+import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
@@ -64,18 +66,20 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
     
     public MultiThreadedBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
                                                final BehaviourFilter      behaviourFilter,
+                                               final ContentStore         configuredContentStore,
                                                final BulkImportStatusImpl importStatus)
     {
-        this(serviceRegistry, behaviourFilter, importStatus, DEFAULT_COMPLETION_CHECK_INTERVAL_MS);
+        this(serviceRegistry, behaviourFilter, configuredContentStore, importStatus, DEFAULT_COMPLETION_CHECK_INTERVAL_MS);
     }
 
 
     public MultiThreadedBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
                                                final BehaviourFilter      behaviourFilter,
+                                               final ContentStore         configuredContentStore,
                                                final BulkImportStatusImpl importStatus,
                                                final long                 completionCheckIntervalMs)
     {
-        super(serviceRegistry, behaviourFilter, importStatus);
+        super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus);
         
         this.completionCheckIntervalMs = completionCheckIntervalMs;
         this.numberOfActiveUnitsOfWork = new AtomicLong();
@@ -97,12 +101,13 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
     
 
     /**
-     * @see org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean)
+     * @see org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean, org.alfresco.repo.content.filestore.FileContentStore)
      */
     @Override
-    protected void bulkImportImpl(final NodeRef target,
-                                  final File    source,
-                                  final boolean replaceExisting)
+    protected void bulkImportImpl(final NodeRef          target,
+                                  final File             source,
+                                  final boolean          replaceExisting,
+                                  final FileContentStore contentStore)
         throws Throwable
     {
         sourceRoot = getFileName(source);
@@ -112,7 +117,7 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
         log.info("Bulk import started from '" + sourceRoot + "'...");
 
         importStatus.startImport(getFileName(source), getRepositoryPath(target), getBatchWeight());
-        threadPool.submit(new UnitOfWork(target, getFileName(source), source, replaceExisting, AuthenticationUtil.getFullyAuthenticatedUser()));
+        threadPool.submit(new UnitOfWork(target, getFileName(source), source, replaceExisting, contentStore, AuthenticationUtil.getFullyAuthenticatedUser()));
         
         startCompletionMonitoringThread();
     }
@@ -188,18 +193,20 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
     private final class UnitOfWork
         implements Runnable
     {
-        private final NodeRef target;
-        private final String  sourceRoot;
-        private final File    source;
-        private final boolean replaceExisting;
-        private final String  currentUser;
+        private final NodeRef          target;
+        private final String           sourceRoot;
+        private final File             source;
+        private final boolean          replaceExisting;
+        private final FileContentStore contentStore;
+        private final String           currentUser;
         
-        private UnitOfWork(final NodeRef target, final String sourceRoot, final File source, final boolean replaceExisting, final String currentUser)
+        private UnitOfWork(final NodeRef target, final String sourceRoot, final File source, final boolean replaceExisting, final FileContentStore contentStore, final String currentUser)
         {
             this.target          = target;
             this.sourceRoot      = sourceRoot;
             this.source          = source;
             this.replaceExisting = replaceExisting;
+            this.contentStore    = contentStore;
             this.currentUser     = currentUser;
         }
 
@@ -219,14 +226,14 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     public Object doWork()
                         throws Exception
                     {
-                        List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting);
+                        List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, contentStore);
 
                         // Submit each sub-directory to the thread pool for independent importation
                         for (final Pair<NodeRef, File> subDirectory : subDirectories)
                         {
                             if (subDirectory != null)
                             {
-                                threadPool.submit(new UnitOfWork(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, currentUser));
+                                threadPool.submit(new UnitOfWork(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, contentStore, currentUser));
                             }
                         }
                         

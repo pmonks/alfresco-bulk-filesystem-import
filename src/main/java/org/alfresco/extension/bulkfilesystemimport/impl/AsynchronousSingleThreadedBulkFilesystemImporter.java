@@ -31,6 +31,8 @@ import java.util.concurrent.ThreadFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.alfresco.repo.content.ContentStore;
+import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
@@ -54,10 +56,11 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
     
     public AsynchronousSingleThreadedBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
                                                             final BehaviourFilter      behaviourFilter,
+                                                            final ContentStore         configuredContentStore,
                                                             final BulkImportStatusImpl importStatus,
                                                             final ThreadFactory        threadFactory)
     {
-        super(serviceRegistry, behaviourFilter, importStatus);
+        super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus);
         
         this.threadFactory = threadFactory;
     }
@@ -67,9 +70,10 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
      * @see org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean)
      */
     @Override
-    protected void bulkImportImpl(final NodeRef target,
-                                  final File    source,
-                                  final boolean replaceExisting)
+    protected void bulkImportImpl(final NodeRef          target,
+                                  final File             source,
+                                  final boolean          replaceExisting,
+                                  final FileContentStore contentStore)
         throws Throwable
     {
         Runnable     backgroundLogic  = null;
@@ -96,7 +100,7 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
                                 log.info("Bulk import started from '" + getFileName(source) + "'...");
 
                                 importStatus.startImport(getFileName(source), getRepositoryPath(target), getBatchWeight());
-                                bulkImportRecursively(target, getFileName(source), source, replaceExisting);
+                                bulkImportRecursively(target, getFileName(source), source, replaceExisting, contentStore);
                                 importStatus.stopImport();
 
                                 log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
