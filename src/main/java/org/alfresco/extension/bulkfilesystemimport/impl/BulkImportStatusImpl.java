@@ -48,6 +48,7 @@ public class BulkImportStatusImpl
     private AtomicBoolean inProgress                              = new AtomicBoolean();
     private String        sourceDirectory                         = null;
     private String        targetSpace                             = null;
+    private ImportType    importType                              = null;
     private Date          startDate                               = null;
     private Date          endDate                                 = null;
     private Long          startNs                                 = null;
@@ -97,11 +98,13 @@ public class BulkImportStatusImpl
     }
     
     // General information
-    public String getSourceDirectory() { return(sourceDirectory); }
-    public String getTargetSpace()     { return(targetSpace); }
-    public Date   getStartDate()       { return(copyDate(startDate)); }
-    public Date   getEndDate()         { return(copyDate(endDate)); }
+    @Override public String     getSourceDirectory() { return(sourceDirectory); }
+    @Override public String     getTargetSpace()     { return(targetSpace); }
+    @Override public ImportType getImportType()      { return(importType); }
+    @Override public Date       getStartDate()       { return(copyDate(startDate)); }
+    @Override public Date       getEndDate()         { return(copyDate(endDate)); }
     
+    @Override
     public Long getDurationInNs()
     {
         Long result = null;
@@ -121,8 +124,9 @@ public class BulkImportStatusImpl
         return(result);
     }
     
-    public Throwable getLastException() { return(lastException); }
+    @Override public Throwable getLastException() { return(lastException); }
     
+    @Override
     public String getLastExceptionAsString()
     {
         String result = null;
@@ -143,16 +147,16 @@ public class BulkImportStatusImpl
         return(result);
     }
     
-    public boolean inProgress()     { return(inProgress.get()); }
-    public long    getBatchWeight() { return(batchWeight.get()); }
+    @Override public boolean inProgress()     { return(inProgress.get()); }
+    @Override public long    getBatchWeight() { return(batchWeight.get()); }
     
-    public String  getCurrentFileBeingProcessed()                                       { return(currentFileBeingProcessed); }
-    public void    setCurrentFileBeingProcessed(final String currentFileBeingProcessed) { this.currentFileBeingProcessed = currentFileBeingProcessed; }
+    @Override public String  getCurrentFileBeingProcessed()                                       { return(currentFileBeingProcessed); }
+    public void              setCurrentFileBeingProcessed(final String currentFileBeingProcessed) { this.currentFileBeingProcessed = currentFileBeingProcessed; }
     
-    public long getNumberOfBatchesCompleted()       { return(numberOfBatchesCompleted.get()); }
-    public void incrementNumberOfBatchesCompleted() { numberOfBatchesCompleted.incrementAndGet(); }
+    @Override public long getNumberOfBatchesCompleted()       { return(numberOfBatchesCompleted.get()); }
+    public void           incrementNumberOfBatchesCompleted() { numberOfBatchesCompleted.incrementAndGet(); }
     
-    public void startImport(final String sourceDirectory, final String targetSpace, final long batchWeight)
+    public void startImport(final String sourceDirectory, final String targetSpace, final ImportType importType, final long batchWeight)
     {
         if (!inProgress.compareAndSet(false, true))
         {
@@ -162,6 +166,7 @@ public class BulkImportStatusImpl
         // General information
         this.sourceDirectory           = sourceDirectory;
         this.targetSpace               = targetSpace;
+        this.importType                = importType;
         this.startDate                 = new Date();
         this.endDate                   = null;
         this.lastException             = null;
@@ -226,21 +231,21 @@ public class BulkImportStatusImpl
     
     
     // Read-side information
-    public long getNumberOfFoldersScanned()              { return(numberOfFoldersScanned.longValue()); }
-    public long getNumberOfFilesScanned()                { return(numberOfFilesScanned.longValue()); }
-    public long getNumberOfUnreadableEntries()           { return(numberOfUnreadableEntries.longValue()); }
+    @Override public long getNumberOfFoldersScanned()              { return(numberOfFoldersScanned.longValue()); }
+    @Override public long getNumberOfFilesScanned()                { return(numberOfFilesScanned.longValue()); }
+    @Override public long getNumberOfUnreadableEntries()           { return(numberOfUnreadableEntries.longValue()); }
     
-    public long getNumberOfContentFilesRead()            { return(numberOfContentFilesRead.longValue()); }
-    public long getNumberOfContentBytesRead()            { return(numberOfContentBytesRead.longValue()); }
+    @Override public long getNumberOfContentFilesRead()            { return(numberOfContentFilesRead.longValue()); }
+    @Override public long getNumberOfContentBytesRead()            { return(numberOfContentBytesRead.longValue()); }
     
-    public long getNumberOfMetadataFilesRead()           { return(numberOfMetadataFilesRead.longValue()); }
-    public long getNumberOfMetadataBytesRead()           { return(numberOfMetadataBytesRead.longValue()); }
+    @Override public long getNumberOfMetadataFilesRead()           { return(numberOfMetadataFilesRead.longValue()); }
+    @Override public long getNumberOfMetadataBytesRead()           { return(numberOfMetadataBytesRead.longValue()); }
     
-    public long getNumberOfContentVersionFilesRead()     { return(numberOfContentVersionFilesRead.longValue()); }
-    public long getNumberOfContentVersionBytesRead()     { return(numberOfContentVersionBytesRead.longValue()); }
+    @Override public long getNumberOfContentVersionFilesRead()     { return(numberOfContentVersionFilesRead.longValue()); }
+    @Override public long getNumberOfContentVersionBytesRead()     { return(numberOfContentVersionBytesRead.longValue()); }
     
-    public long getNumberOfMetadataVersionFilesRead()    { return(numberOfMetadataVersionFilesRead.longValue()); }
-    public long getNumberOfMetadataVersionBytesRead()    { return(numberOfMetadataVersionBytesRead.longValue()); }
+    @Override public long getNumberOfMetadataVersionFilesRead()    { return(numberOfMetadataVersionFilesRead.longValue()); }
+    @Override public long getNumberOfMetadataVersionBytesRead()    { return(numberOfMetadataVersionBytesRead.longValue()); }
     
     public void incrementImportableItemsRead(final ImportableItem importableItem, final boolean isDirectory)
     {
@@ -306,20 +311,20 @@ public class BulkImportStatusImpl
     
     
     // Write-side information
-    public long getNumberOfSpaceNodesCreated()               { return(numberOfSpaceNodesCreated.longValue()); }
-    public long getNumberOfSpaceNodesReplaced()              { return(numberOfSpaceNodesReplaced.longValue()); }
-    public long getNumberOfSpaceNodesSkipped()               { return(numberOfSpaceNodesSkipped.longValue()); }
-    public long getNumberOfSpacePropertiesWritten()          { return(numberOfSpacePropertiesWritten.longValue()); }
+    @Override public long getNumberOfSpaceNodesCreated()               { return(numberOfSpaceNodesCreated.longValue()); }
+    @Override public long getNumberOfSpaceNodesReplaced()              { return(numberOfSpaceNodesReplaced.longValue()); }
+    @Override public long getNumberOfSpaceNodesSkipped()               { return(numberOfSpaceNodesSkipped.longValue()); }
+    @Override public long getNumberOfSpacePropertiesWritten()          { return(numberOfSpacePropertiesWritten.longValue()); }
     
-    public long getNumberOfContentNodesCreated()             { return(numberOfContentNodesCreated.longValue()); }
-    public long getNumberOfContentNodesReplaced()            { return(numberOfContentNodesReplaced.longValue()); }
-    public long getNumberOfContentNodesSkipped()             { return(numberOfContentNodesSkipped.longValue()); }
-    public long getNumberOfContentBytesWritten()             { return(numberOfContentBytesWritten.longValue()); }
-    public long getNumberOfContentPropertiesWritten()        { return(numberOfContentPropertiesWritten.longValue()); }
+    @Override public long getNumberOfContentNodesCreated()             { return(numberOfContentNodesCreated.longValue()); }
+    @Override public long getNumberOfContentNodesReplaced()            { return(numberOfContentNodesReplaced.longValue()); }
+    @Override public long getNumberOfContentNodesSkipped()             { return(numberOfContentNodesSkipped.longValue()); }
+    @Override public long getNumberOfContentBytesWritten()             { return(numberOfContentBytesWritten.longValue()); }
+    @Override public long getNumberOfContentPropertiesWritten()        { return(numberOfContentPropertiesWritten.longValue()); }
     
-    public long getNumberOfContentVersionsCreated()          { return(numberOfContentVersionsCreated.longValue()); }
-    public long getNumberOfContentVersionBytesWritten()      { return(numberOfContentVersionBytesWritten.longValue()); }
-    public long getNumberOfContentVersionPropertiesWritten() { return(numberOfContentVersionPropertiesWritten.longValue()); }
+    @Override public long getNumberOfContentVersionsCreated()          { return(numberOfContentVersionsCreated.longValue()); }
+    @Override public long getNumberOfContentVersionBytesWritten()      { return(numberOfContentVersionBytesWritten.longValue()); }
+    @Override public long getNumberOfContentVersionPropertiesWritten() { return(numberOfContentVersionPropertiesWritten.longValue()); }
     
     public void incrementNodesWritten(final ImportableItem importableItem,
                                       final boolean        isSpace,

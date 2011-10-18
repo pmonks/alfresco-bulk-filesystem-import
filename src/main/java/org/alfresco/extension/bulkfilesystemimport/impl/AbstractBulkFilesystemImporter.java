@@ -162,13 +162,13 @@ public abstract class AbstractBulkFilesystemImporter
         validateNodeRefIsWritableSpace(target);
         validateFileIsReadableDirectory(source);
         
-        bulkImportImpl(target, source, replaceExisting, getContentStore(source));
+        bulkImportImpl(target, source, replaceExisting, isInContentStore(source));
     }
     
     
-    private final FileContentStore getContentStore(final File source)
+    private final boolean isInContentStore(final File source)
     {
-        FileContentStore result = null;
+        boolean result = false;
         
         // Ignore non-file content stores
         if (configuredContentStore instanceof FileContentStore)
@@ -185,10 +185,7 @@ public abstract class AbstractBulkFilesystemImporter
                 sourcePath = source.getAbsolutePath();
             }
             
-            if (sourcePath.startsWith(storeRootLocation))
-            {
-                result = (FileContentStore)configuredContentStore;
-            }
+            result = sourcePath.startsWith(storeRootLocation);
         }
         
         return(result);
@@ -204,12 +201,12 @@ public abstract class AbstractBulkFilesystemImporter
      * @param sourceRoot      The original directory from which this import was initiated <i>(must not be null)</i>.
      * @param source          The source directory on the local filesystem to read content from <i>(must not be null and must be a valid, readable directory on the local filesystem)</i>.
      * @param replaceExisting A flag indicating whether to replace (true) or skip (false) files that are already in the repository.
-     * @param contentStore    The file content store the source directory is located in <i>(will be null if the source directory is not in a file content store)</i>.
+     * @param inPlaceImport   A flag indicating whether this is an "in place" import (i.e. the source directory is already located inside the configured content store).
      */
-    protected abstract void bulkImportImpl(final NodeRef          target,
-                                           final File             source,
-                                           final boolean          replaceExisting,
-                                           final FileContentStore contentStore)
+    protected abstract void bulkImportImpl(final NodeRef target,
+                                           final File    source,
+                                           final boolean replaceExisting,
+                                           final boolean inPlaceImport)
         throws Throwable;
 
     
@@ -230,14 +227,14 @@ public abstract class AbstractBulkFilesystemImporter
      * @param sourceRoot      The original directory from which this import was initiated <i>(must not be null)</i>.
      * @param source          The source directory on the local filesystem to read content from <i>(must not be null and must be a valid, readable directory on the local filesystem)</i>.
      * @param replaceExisting A flag indicating whether to replace (true) or skip (false) files that are already in the repository.
-     * @param contentStore    The file content store the source directory is located in <i>(will be null if the source directory is not in a file content store)</i>.
+     * @param inPlaceImport   A flag indicating whether this is an "in place" import (i.e. the source directory is already located inside the configured content store).
      * @return A list of sub-directories that have yet to be loaded, along with their associated NodeRefs in the repository <i>(will not be null, but may be empty)</i>.
      */
-    protected final List<Pair<NodeRef, File>> importDirectory(final NodeRef          target,
-                                                              final String           sourceRoot,
-                                                              final File             source,
-                                                              final boolean          replaceExisting,
-                                                              final FileContentStore contentStore)
+    protected final List<Pair<NodeRef, File>> importDirectory(final NodeRef target,
+                                                              final String  sourceRoot,
+                                                              final File    source,
+                                                              final boolean replaceExisting,
+                                                              final boolean inPlaceImport)
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
         
@@ -259,7 +256,7 @@ public abstract class AbstractBulkFilesystemImporter
                                             "\n\t" + batchedImportableItems.size()            + " batch"                    + (batchedImportableItems.size()            == 1 ? "" : "es"));
         
         // PHASE 4: load the batches
-        result.addAll(importImportableItemBatches(target, sourceRoot, batchedImportableItems, replaceExisting, contentStore));
+        result.addAll(importImportableItemBatches(target, sourceRoot, batchedImportableItems, replaceExisting, inPlaceImport));
         
         return(result);
     }
@@ -332,7 +329,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                                         final String                     sourceRoot,
                                                                         final List<List<ImportableItem>> batches,
                                                                         final boolean                    replaceExisting,
-                                                                        final FileContentStore           contentStore)
+                                                                        final boolean                    inPlaceImport)
                                                                         
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
@@ -341,7 +338,7 @@ public abstract class AbstractBulkFilesystemImporter
         {
             for (final List<ImportableItem> batch : batches)
             {
-                result.addAll(importBatchInTxn(target, sourceRoot, batch, replaceExisting, contentStore));
+                result.addAll(importBatchInTxn(target, sourceRoot, batch, replaceExisting, inPlaceImport));
 
                 // If we're running on a background thread that's been interrupted, terminate early
                 if (Thread.interrupted())
@@ -360,7 +357,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                              final String               sourceRoot,
                                                              final List<ImportableItem> batch,
                                                              final boolean              replaceExisting,
-                                                             final FileContentStore     contentStore)
+                                                             final boolean              inPlaceImport)
     {
         List<Pair<NodeRef, File>> result    = new ArrayList<Pair<NodeRef, File>>();
         RetryingTransactionHelper txnHelper = serviceRegistry.getRetryingTransactionHelper();
@@ -372,7 +369,7 @@ public abstract class AbstractBulkFilesystemImporter
                 {
                     // Disable the auditable aspect's behaviours for this transaction, to allow creation & modification dates to be set 
                     behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
-                    return(importBatch(target, sourceRoot, batch, replaceExisting, contentStore));
+                    return(importBatch(target, sourceRoot, batch, replaceExisting, inPlaceImport));
                 }
             },
             false,    // read only flag
@@ -388,13 +385,13 @@ public abstract class AbstractBulkFilesystemImporter
                                                         final String               sourcePath,
                                                         final List<ImportableItem> batch,
                                                         final boolean              replaceExisting,
-                                                        final FileContentStore     contentStore)
+                                                        final boolean              inPlaceImport)
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
         
         for (final ImportableItem importableItem : batch)
         {
-            NodeRef nodeRef = importImportableItem(target, sourcePath, importableItem, replaceExisting, contentStore);
+            NodeRef nodeRef = importImportableItem(target, sourcePath, importableItem, replaceExisting, inPlaceImport);
             
             // If it's a directory, add it to the list of sub-directories to be processed
             if (nodeRef != null &&
@@ -413,7 +410,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                final String           sourceRoot,
                                                final ImportableItem   importableItem,
                                                final boolean          replaceExisting,
-                                               final FileContentStore contentStore)
+                                               final boolean          inPlaceImport)
                                                
     {
         if (log.isDebugEnabled()) log.debug("Importing " + String.valueOf(importableItem));
@@ -439,7 +436,7 @@ public abstract class AbstractBulkFilesystemImporter
             }
             else
             {
-                numVersionProperties = importImportableItemFile(result, importableItem, contentStore, metadata);
+                numVersionProperties = importImportableItemFile(result, importableItem, inPlaceImport, metadata);
             }
             
             importStatus.incrementNodesWritten(importableItem, isDirectory, nodeState, metadata.getProperties().size() + 4, numVersionProperties);
@@ -554,7 +551,7 @@ public abstract class AbstractBulkFilesystemImporter
 
     private final int importImportableItemFile(final NodeRef                 nodeRef,
                                                final ImportableItem          importableItem,
-                                               final FileContentStore        contentStore, 
+                                               final boolean                 inPlaceImport, 
                                                final MetadataLoader.Metadata metadata)
     {
         int result = 0;
@@ -568,12 +565,12 @@ public abstract class AbstractBulkFilesystemImporter
                 metadata.addAspect(ContentModel.ASPECT_VERSIONABLE);
             }
                     
-            result = importContentVersions(nodeRef, importableItem, contentStore);
+            result = importContentVersions(nodeRef, importableItem, inPlaceImport);
         }
         
         if (log.isDebugEnabled()) log.debug("Creating head revision of node " + nodeRef.toString());
         
-        importContentAndMetadata(nodeRef, importableItem.getHeadRevision(), contentStore, metadata);
+        importContentAndMetadata(nodeRef, importableItem.getHeadRevision(), inPlaceImport, metadata);
         
         return(result);
     }
@@ -581,7 +578,7 @@ public abstract class AbstractBulkFilesystemImporter
     
     private final int importContentVersions(final NodeRef          nodeRef,
                                             final ImportableItem   importableItem,
-                                            final FileContentStore contentStore)
+                                            final boolean          inPlaceImport)
     {
         int result = 0;
         
@@ -590,7 +587,7 @@ public abstract class AbstractBulkFilesystemImporter
             Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
             MetadataLoader.Metadata   metadata          = loadMetadata(versionEntry);
             
-            importContentAndMetadata(nodeRef, versionEntry, contentStore, metadata);
+            importContentAndMetadata(nodeRef, versionEntry, inPlaceImport, metadata);
 
             if (log.isDebugEnabled()) log.debug("Creating v" + String.valueOf(versionEntry.getVersion()) + " of node '" + nodeRef.toString() + "' (note: version label in Alfresco will not be the same - it is not currently possible to explicitly force a particular version label).");
   
@@ -610,7 +607,7 @@ public abstract class AbstractBulkFilesystemImporter
     
     private final void importContentAndMetadata(final NodeRef                           nodeRef,
                                                 final ImportableItem.ContentAndMetadata contentAndMetadata,
-                                                final FileContentStore                  contentStore,
+                                                final boolean                           inPlaceImport,
                                                 final MetadataLoader.Metadata           metadata)
     {
         // Write the content of the file
@@ -618,12 +615,12 @@ public abstract class AbstractBulkFilesystemImporter
         {
             importStatus.setCurrentFileBeingProcessed(getFileName(contentAndMetadata.getContentFile()));
             
-            if (contentStore != null)
+            if (inPlaceImport)
             {
                 // It's already in a content store, so simply "link" it into the repository
                 if (log.isDebugEnabled()) log.debug("Linking ContentStore file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
                 
-                metadata.addProperty(ContentModel.PROP_CONTENT, buildContentProperty(contentAndMetadata, contentStore));
+                metadata.addProperty(ContentModel.PROP_CONTENT, buildContentProperty(contentAndMetadata));
             }
             else
             {
@@ -658,11 +655,11 @@ public abstract class AbstractBulkFilesystemImporter
     }
     
     
-    private final ContentData buildContentProperty(final ImportableItem.ContentAndMetadata contentAndMetadata, final FileContentStore contentStore)
+    private final ContentData buildContentProperty(final ImportableItem.ContentAndMetadata contentAndMetadata)
     {
-        ContentData result     = null;
+        ContentData result = null;
         
-        String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + contentAndMetadata.getContentFile().getAbsolutePath().replace(contentStore.getRootLocation() + OS_FILE_SEPARATOR, "");
+        String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + contentAndMetadata.getContentFile().getAbsolutePath().replace(configuredContentStore.getRootLocation() + OS_FILE_SEPARATOR, "");
         String mimeType   = mimeTypeService.guessMimetype(contentAndMetadata.getContentFile().getName());
         String encoding   = DEFAULT_TEXT_ENCODING;
                 

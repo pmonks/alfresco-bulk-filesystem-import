@@ -31,8 +31,8 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
 import org.alfresco.repo.content.ContentStore;
-import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.service.ServiceRegistry;
 import org.alfresco.service.cmr.repository.NodeRef;
@@ -59,20 +59,23 @@ public class SingleThreadedBulkFilesystemImporter
         super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus);
     }
 
-    
+
     /**
-     * @see org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean, org.alfresco.repo.content.filestore.FileContentStore)
+     * @see org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean, boolean)
      */
     @Override
-    protected void bulkImportImpl(final NodeRef target, final File source, final boolean replaceExisting, final FileContentStore contentStore)
+    protected void bulkImportImpl(final NodeRef target, final File source, final boolean replaceExisting, final boolean inPlaceImport)
         throws Throwable
     {
         try
         {
             log.info("Bulk import started from '" + getFileName(source) + "'...");
 
-            importStatus.startImport(getFileName(source), getRepositoryPath(target), getBatchWeight());
-            bulkImportRecursively(target, getFileName(source), source, replaceExisting, contentStore);
+            importStatus.startImport(getFileName(source),
+                                     getRepositoryPath(target),
+                                     inPlaceImport ? BulkImportStatus.ImportType.IN_PLACE : BulkImportStatus.ImportType.STREAMING,
+                                     getBatchWeight());
+            bulkImportRecursively(target, getFileName(source), source, replaceExisting, inPlaceImport);
             importStatus.stopImport();
 
             log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
@@ -92,25 +95,26 @@ public class SingleThreadedBulkFilesystemImporter
      * Method that does the work of recursively importing a directory.  The only reason this method exists is to ensure subclasses can
      * cleanly override bulkImportImpl without messing up the mechanics of the recursion.
      * 
-     * @param target         The target space to ingest the content into <i>(must not be null and must be a valid, writable space in the repository)</i>.
-     * @param sourceRoot     The original directory from which this import was initiated <i>(must not be null)</i>.
-     * @param source         The source directory on the local filesystem to read content from <i>(must not be null and must be a valid, readable directory on the local filesystem)</i>.
+     * @param target          The target space to ingest the content into <i>(must not be null and must be a valid, writable space in the repository)</i>.
+     * @param sourceRoot      The original directory from which this import was initiated <i>(must not be null)</i>.
+     * @param source          The source directory on the local filesystem to read content from <i>(must not be null and must be a valid, readable directory on the local filesystem)</i>.
      * @param replaceExisting A flag indicating whether to replace (true) or skip (false) files that are already in the repository.
+     * @param inPlaceImport   A flag indicating whether this is an "in place" import (i.e. the source directory is already located inside the configured content store).
      */
-    protected final void bulkImportRecursively(final NodeRef          target,
-                                               final String           sourceRoot,
-                                               final File             source,
-                                               final boolean          replaceExisting,
-                                               final FileContentStore contentStore)
+    protected final void bulkImportRecursively(final NodeRef target,
+                                               final String  sourceRoot,
+                                               final File    source,
+                                               final boolean replaceExisting,
+                                               final boolean inPlaceImport)
     {
-        List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, contentStore);
+        List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, inPlaceImport);
 
         // Recursively import sub directories
         for (final Pair<NodeRef, File> subDirectory : subDirectories)
         {
             if (subDirectory != null)
             {
-                bulkImportRecursively(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, contentStore);
+                bulkImportRecursively(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport);
             }
         }
     }

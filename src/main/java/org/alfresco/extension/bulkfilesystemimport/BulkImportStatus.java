@@ -38,8 +38,9 @@ public interface BulkImportStatus
     // General information
     boolean inProgress();
     
-    String getSourceDirectory();
-    String getTargetSpace();
+    String     getSourceDirectory();
+    String     getTargetSpace();
+    ImportType getImportType();
     
     Date getStartDate();
     Date getEndDate();
@@ -86,4 +87,11 @@ public interface BulkImportStatus
     long getNumberOfContentVersionsCreated();
     long getNumberOfContentVersionBytesWritten();
     long getNumberOfContentVersionPropertiesWritten();
+
+    public enum ImportType
+    {
+        STREAMING,
+        IN_PLACE
+    };
+    
 }

@@ -31,8 +31,8 @@ import java.util.concurrent.ThreadFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
 import org.alfresco.repo.content.ContentStore;
-import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
@@ -67,13 +67,13 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
     
 
     /**
-     * @see org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean)
+     * @see org.alfresco.extension.bulkfilesystemimport.impl.SingleThreadedBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean, boolean)
      */
     @Override
-    protected void bulkImportImpl(final NodeRef          target,
-                                  final File             source,
-                                  final boolean          replaceExisting,
-                                  final FileContentStore contentStore)
+    protected void bulkImportImpl(final NodeRef target,
+                                  final File    source,
+                                  final boolean replaceExisting,
+                                  final boolean inPlaceImport)
         throws Throwable
     {
         Runnable     backgroundLogic  = null;
@@ -99,8 +99,11 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
                             {
                                 log.info("Bulk import started from '" + getFileName(source) + "'...");
 
-                                importStatus.startImport(getFileName(source), getRepositoryPath(target), getBatchWeight());
-                                bulkImportRecursively(target, getFileName(source), source, replaceExisting, contentStore);
+                                importStatus.startImport(getFileName(source),
+                                                         getRepositoryPath(target),
+                                                         inPlaceImport ? BulkImportStatus.ImportType.IN_PLACE : BulkImportStatus.ImportType.STREAMING,
+                                                         getBatchWeight());
+                                bulkImportRecursively(target, getFileName(source), source, replaceExisting, inPlaceImport);
                                 importStatus.stopImport();
 
                                 log.info("Bulk import from '" + getFileName(source) + "' succeeded.");

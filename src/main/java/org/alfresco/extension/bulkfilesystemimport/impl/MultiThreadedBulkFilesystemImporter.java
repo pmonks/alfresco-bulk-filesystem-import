@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
 import org.alfresco.repo.content.ContentStore;
-import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
@@ -101,13 +101,13 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
     
 
     /**
-     * @see org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean, org.alfresco.repo.content.filestore.FileContentStore)
+     * @see org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter#bulkImportImpl(org.alfresco.service.cmr.repository.NodeRef, java.io.File, boolean, boolean)
      */
     @Override
-    protected void bulkImportImpl(final NodeRef          target,
-                                  final File             source,
-                                  final boolean          replaceExisting,
-                                  final FileContentStore contentStore)
+    protected void bulkImportImpl(final NodeRef target,
+                                  final File    source,
+                                  final boolean replaceExisting,
+                                  final boolean inPlaceImport)
         throws Throwable
     {
         sourceRoot = getFileName(source);
@@ -116,8 +116,11 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
         
         log.info("Bulk import started from '" + sourceRoot + "'...");
 
-        importStatus.startImport(getFileName(source), getRepositoryPath(target), getBatchWeight());
-        threadPool.submit(new UnitOfWork(target, getFileName(source), source, replaceExisting, contentStore, AuthenticationUtil.getFullyAuthenticatedUser()));
+        importStatus.startImport(getFileName(source),
+                                 getRepositoryPath(target),
+                                 inPlaceImport ? BulkImportStatus.ImportType.IN_PLACE : BulkImportStatus.ImportType.STREAMING,
+                                 getBatchWeight());
+        threadPool.submit(new UnitOfWork(target, getFileName(source), source, replaceExisting, inPlaceImport, AuthenticationUtil.getFullyAuthenticatedUser()));
         
         startCompletionMonitoringThread();
     }
@@ -147,6 +150,10 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                 
                 try
                 {
+                    // Dodgy hack to avoid race condition before the import has started
+                    //###TODO: revisit this via thread notification or wotnot
+                    Thread.sleep(completionCheckIntervalMs);
+                    
                     while (!Thread.interrupted() && importStatus.inProgress())
                     {
                         if (numberOfActiveUnitsOfWork.get() == 0 && threadPool.getQueue().isEmpty())
@@ -160,16 +167,13 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                         }
                         else
                         {
-                            try
-                            {
-                                Thread.sleep(completionCheckIntervalMs);
-                            }
-                            catch (final InterruptedException ie)
-                            {
-                                break; // Drop out of the while loop, thereby terminating the thread
-                            }
+                            Thread.sleep(completionCheckIntervalMs);
                         }
                     }
+                }
+                catch (final InterruptedException ie)
+                {
+                    if (log.isDebugEnabled()) log.debug(Thread.currentThread().getName() + " was interrupted.", ie);
                 }
                 finally
                 {
@@ -193,20 +197,25 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
     private final class UnitOfWork
         implements Runnable
     {
-        private final NodeRef          target;
-        private final String           sourceRoot;
-        private final File             source;
-        private final boolean          replaceExisting;
-        private final FileContentStore contentStore;
-        private final String           currentUser;
+        private final NodeRef target;
+        private final String  sourceRoot;
+        private final File    source;
+        private final boolean replaceExisting;
+        private final boolean inPlaceImport;
+        private final String  currentUser;
         
-        private UnitOfWork(final NodeRef target, final String sourceRoot, final File source, final boolean replaceExisting, final FileContentStore contentStore, final String currentUser)
+        private UnitOfWork(final NodeRef target,
+                           final String  sourceRoot,
+                           final File    source,
+                           final boolean replaceExisting,
+                           final boolean inPlaceImport,
+                           final String  currentUser)
         {
             this.target          = target;
             this.sourceRoot      = sourceRoot;
             this.source          = source;
             this.replaceExisting = replaceExisting;
-            this.contentStore    = contentStore;
+            this.inPlaceImport   = inPlaceImport;
             this.currentUser     = currentUser;
         }
 
@@ -226,14 +235,14 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     public Object doWork()
                         throws Exception
                     {
-                        List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, contentStore);
+                        List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, inPlaceImport);
 
                         // Submit each sub-directory to the thread pool for independent importation
                         for (final Pair<NodeRef, File> subDirectory : subDirectories)
                         {
                             if (subDirectory != null)
                             {
-                                threadPool.submit(new UnitOfWork(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, contentStore, currentUser));
+                                threadPool.submit(new UnitOfWork(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport, currentUser));
                             }
                         }
                         

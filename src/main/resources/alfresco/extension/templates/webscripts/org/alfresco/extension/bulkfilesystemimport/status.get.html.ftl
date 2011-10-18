@@ -84,6 +84,16 @@
         </td>
       </tr>
       <tr>
+        <td>Import Type:</td>
+        <td>
+[#if importStatus.importType??]
+          ${importStatus.importType}
+[#else]
+          n/a
+[/#if]
+        </td>
+      </tr>
+      <tr>
         <td>Batch Weight:</td>
         <td>${importStatus.batchWeight}</td>
       </tr>
