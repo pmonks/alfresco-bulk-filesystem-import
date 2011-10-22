@@ -121,49 +121,52 @@ abstract class AbstractMapBasedMetadataLoader
             {
                 Map<String,Serializable> metadataProperties = loadMetadataFromFile(metadataFile);
                 
-                for (String key : metadataProperties.keySet())
+                if (metadataProperties != null)
                 {
-                    if (PROPERTY_NAME_TYPE.equals(key))
+                    for (String key : metadataProperties.keySet())
                     {
-                        String typeName = (String)metadataProperties.get(key);
-                        QName  type     = QName.createQName(typeName, namespaceService);
-                        
-                        metadata.setType(type);
-                    }
-                    else if (PROPERTY_NAME_ASPECTS.equals(key))
-                    {
-                        String[] aspectNames = ((String)metadataProperties.get(key)).split(",");
-                        
-                        for (final String aspectName : aspectNames)
+                        if (PROPERTY_NAME_TYPE.equals(key))
                         {
-                            QName aspect = QName.createQName(aspectName.trim(), namespaceService);
-                            metadata.addAspect(aspect);
+                            String typeName = (String)metadataProperties.get(key);
+                            QName  type     = QName.createQName(typeName, namespaceService);
+                            
+                            metadata.setType(type);
                         }
-                    }
-                    else  // Any other key => property
-                    {
-                        //####TODO: figure out how to handle properties of type cm:content - they need to be streamed in via a Writer 
-                    	QName              name               = QName.createQName(key, namespaceService);
-                    	PropertyDefinition propertyDefinition = dictionaryService.getProperty(name);  // TODO: measure performance impact of this API call!!
-                    	
-                    	if (propertyDefinition != null)
-                    	{
-                        	if (propertyDefinition.isMultiValued())
+                        else if (PROPERTY_NAME_ASPECTS.equals(key))
+                        {
+                            String[] aspectNames = ((String)metadataProperties.get(key)).split(",");
+                            
+                            for (final String aspectName : aspectNames)
+                            {
+                                QName aspect = QName.createQName(aspectName.trim(), namespaceService);
+                                metadata.addAspect(aspect);
+                            }
+                        }
+                        else  // Any other key => property
+                        {
+                            //####TODO: figure out how to handle properties of type cm:content - they need to be streamed in via a Writer 
+                        	QName              name               = QName.createQName(key, namespaceService);
+                        	PropertyDefinition propertyDefinition = dictionaryService.getProperty(name);  // TODO: measure performance impact of this API call!!
+                        	
+                        	if (propertyDefinition != null)
                         	{
-                                // Multi-valued property
-                        		ArrayList<Serializable> values = new ArrayList<Serializable>(Arrays.asList(((String)metadataProperties.get(key)).split(multiValuedSeparator)));
-                        	    metadata.addProperty(name, values);
+                            	if (propertyDefinition.isMultiValued())
+                            	{
+                                    // Multi-valued property
+                            		ArrayList<Serializable> values = new ArrayList<Serializable>(Arrays.asList(((String)metadataProperties.get(key)).split(multiValuedSeparator)));
+                            	    metadata.addProperty(name, values);
+                            	}
+                            	else
+                            	{
+                            	    // Single value property
+                            		metadata.addProperty(name, metadataProperties.get(key));
+                            	}
                         	}
                         	else
                         	{
-                        	    // Single value property
-                        		metadata.addProperty(name, metadataProperties.get(key));
+                        	    if (log.isWarnEnabled()) log.warn("Property " + String.valueOf(name) + " doesn't exist in the Data Dictionary.  Ignoring it.");
                         	}
-                    	}
-                    	else
-                    	{
-                    	    if (log.isWarnEnabled()) log.warn("Property " + String.valueOf(name) + " doesn't exist in the Data Dictionary.  Ignoring it.");
-                    	}
+                        }
                     }
                 }
             }
