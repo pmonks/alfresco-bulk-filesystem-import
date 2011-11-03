@@ -25,6 +25,10 @@
   <ImportType>${importStatus.importType}</ImportType>
 [/#if]
   <BatchWeight>${importStatus.batchWeight?c}</BatchWeight>
+[#if importStatus.inProgress()]
+  <TotalThreads>${importStatus.totalNumberOfThreads?c}</TotalThreads>
+  <ActiveThreads>${importStatus.numberOfActiveThreads?c}</ActiveThreads>
+[/#if]
 [#if importStatus.startDate??]
   <StartDate>${importStatus.startDate?datetime?string("yyyy-MM-dd'T'HH:mm:ss.SSS")}</StartDate>
 [/#if]
@@ -35,8 +39,6 @@
   <DurationInNS>${importStatus.durationInNs?c}</DurationInNS>
 [/#if]
   <CompletedBatches>${importStatus.numberOfBatchesCompleted}</CompletedBatches>
-[#if !importStatus.inProgress() && importStatus.endDate??]
-[/#if]
   <SourceStatistics>
     <LastFileOrFolderProcessed>${importStatus.currentFileBeingProcessed!"n/a"}</LastFileOrFolderProcessed>
     <FilesScanned>${importStatus.numberOfFilesScanned?c}</FilesScanned>

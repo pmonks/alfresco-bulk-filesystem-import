@@ -119,7 +119,8 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
         importStatus.startImport(getFileName(source),
                                  getRepositoryPath(target),
                                  inPlaceImport ? BulkImportStatus.ImportType.IN_PLACE : BulkImportStatus.ImportType.STREAMING,
-                                 getBatchWeight());
+                                 getBatchWeight(),
+                                 threadPool);
         threadPool.submit(new UnitOfWork(target, getFileName(source), source, replaceExisting, inPlaceImport, AuthenticationUtil.getFullyAuthenticatedUser()));
         
         startCompletionMonitoringThread();

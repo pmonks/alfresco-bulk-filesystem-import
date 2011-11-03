@@ -97,6 +97,12 @@
         <td>Batch Weight:</td>
         <td>${importStatus.batchWeight}</td>
       </tr>
+[#if importStatus.inProgress()]
+      <tr>
+        <td>Active Threads:</td>
+        <td>${importStatus.numberOfActiveThreads} (of ${importStatus.totalNumberOfThreads} total)</td>
+      </tr>
+[/#if]
       <tr>
         <td>Start Date:</td>
         <td>

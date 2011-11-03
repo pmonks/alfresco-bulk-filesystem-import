@@ -28,6 +28,7 @@ package org.alfresco.extension.bulkfilesystemimport.impl;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -56,6 +57,7 @@ public class BulkImportStatusImpl
     private Throwable     lastException                           = null;
     private String        currentFileBeingProcessed               = null;
     private AtomicLong    batchWeight                             = new AtomicLong();
+    private ThreadPoolExecutor threadPool                         = null;
     private AtomicLong    numberOfBatchesCompleted                = new AtomicLong();
     
     // Read-side information
@@ -147,8 +149,11 @@ public class BulkImportStatusImpl
         return(result);
     }
     
-    @Override public boolean inProgress()     { return(inProgress.get()); }
-    @Override public long    getBatchWeight() { return(batchWeight.get()); }
+    @Override public boolean inProgress()               { return(inProgress.get()); }
+    @Override public long    getBatchWeight()           { return(batchWeight.get()); }
+    @Override public int     getNumberOfActiveThreads() { return(threadPool == null ? 1 : threadPool.getActiveCount()); }
+    @Override public int     getTotalNumberOfThreads()  { return(threadPool == null ? 1 : threadPool.getPoolSize()); }
+
     
     @Override public String  getCurrentFileBeingProcessed()                                       { return(currentFileBeingProcessed); }
     public void              setCurrentFileBeingProcessed(final String currentFileBeingProcessed) { this.currentFileBeingProcessed = currentFileBeingProcessed; }
@@ -157,6 +162,11 @@ public class BulkImportStatusImpl
     public void           incrementNumberOfBatchesCompleted() { numberOfBatchesCompleted.incrementAndGet(); }
     
     public void startImport(final String sourceDirectory, final String targetSpace, final ImportType importType, final long batchWeight)
+    {
+        startImport(sourceDirectory, targetSpace, importType, batchWeight, null);
+    }
+    
+    public void startImport(final String sourceDirectory, final String targetSpace, final ImportType importType, final long batchWeight, final ThreadPoolExecutor threadPool)
     {
         if (!inProgress.compareAndSet(false, true))
         {
@@ -172,6 +182,7 @@ public class BulkImportStatusImpl
         this.lastException             = null;
         this.currentFileBeingProcessed = null;
         this.batchWeight.set(batchWeight);
+        this.threadPool                = threadPool;
         this.numberOfBatchesCompleted.set(0);
         
         // Read-side information

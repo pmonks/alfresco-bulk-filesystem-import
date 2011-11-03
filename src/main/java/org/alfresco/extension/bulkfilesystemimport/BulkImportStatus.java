@@ -46,6 +46,8 @@ public interface BulkImportStatus
     Date getEndDate();
     
     long getBatchWeight();
+    int  getNumberOfActiveThreads();
+    int  getTotalNumberOfThreads();
     
     String getCurrentFileBeingProcessed();
     long   getNumberOfBatchesCompleted();
@@ -90,8 +92,24 @@ public interface BulkImportStatus
 
     public enum ImportType
     {
-        STREAMING,
-        IN_PLACE
+        STREAMING("Streaming"),
+        IN_PLACE("In Place");
+        
+        // The following allows us to create human-readable names for this enum.
+        // Note that it breaks round-tripping (enum -> String -> enum).
+        private final String name;
+        
+        private ImportType(final String name)
+        {
+            this.name = name;
+            
+        }
+        
+        @Override
+        public String toString()
+        {
+            return(name);
+        }
     };
     
 }
