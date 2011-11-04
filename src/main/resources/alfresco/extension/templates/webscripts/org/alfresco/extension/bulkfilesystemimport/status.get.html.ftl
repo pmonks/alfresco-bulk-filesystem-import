@@ -12,9 +12,11 @@
 [/#macro]
 [#macro formatBytes bytes]
   [@compress single_line=true]
-    [#if bytes   > 1000000000]${(bytes / 1000000000)?string("#,##0.00")}GB
-    [#elseif bytes > 1000000]${(bytes / 1000000)?string("#,##0.00")}MB
-    [#elseif bytes > 1000]${(bytes / 1000)?string("#,##0.00")}kB
+    [#if     bytes > (1024 * 1024 * 1024 * 1024 * 1024)]${(bytes / (1024 * 1024 * 1024 * 1024 * 1024))?string("#,##0.00")}PB
+    [#elseif bytes > (1024 * 1024 * 1024 * 1024)]${(bytes / (1024 * 1024 * 1024 * 1024))?string("#,##0.00")}TB
+    [#elseif bytes > (1024 * 1024 * 1024)]${(bytes / (1024 * 1024 * 1024))?string("#,##0.00")}GB
+    [#elseif bytes > (1024 * 1024)]${(bytes / (1024 * 1024))?string("#,##0.00")}MB
+    [#elseif bytes > 1024]${(bytes / 1024)?string("#,##0.00")}kB
     [#else]${bytes?string("#,##0")}B
     [/#if]
   [/@compress]
