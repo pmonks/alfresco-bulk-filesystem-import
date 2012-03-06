@@ -14,56 +14,20 @@
   <name>Alfresco Bulk Filesystem Import</name>
   <version>1.2-SNAPSHOT</version>
 
-  <repositories>
-    <repository>
-      <id>jboss-public</id>
-      <name>JBoss Public Repository</name>
-      <url>http://repository.jboss.org/nexus/content/groups/public</url>
-    </repository>
-    <repository>
-      <id>spring-milestones</id>
-      <name>Spring Milestone Repository</name>
-      <url>http://extensions.springframework.org/milestone</url>
-    </repository>
-    <repository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshot Repository</name>
-      <url>http://extensions.springframework.org/snapshot</url>
-    </repository>
-    <repository>
-      <id>alfresco-public</id>
-      <name>Alfresco Public Repository</name>
-      <url>http://maven.alfresco.com/nexus/content/repositories/releases</url>
-    </repository>
-    <repository>
-      <id>alfresco-employee-repository</id>
-      <name>Alfresco Employee Repository (private)</name>
-      <url>https://svn.alfresco.com/repos/field/maven</url>
-    </repository>
-  </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>alfresco-public</id>
-      <name>Alfresco</name>
-      <url>http://maven.alfresco.com/nexus/content/repositories/releases</url>
-    </pluginRepository>
-  </pluginRepositories>
-
   <dependencies>
     <!-- Alfresco Enterprise -->
     <dependency>
       <groupId>org.alfresco</groupId>
       <artifactId>alfresco-repository</artifactId>
-      <version>3.4.5</version>
+      <version>4.0.0</version>
       <scope>provided</scope>
     </dependency>
 
     <!-- Non-Alfresco dependencies -->
     <dependency>
-	  <groupId>org.springframework.extensions.surf</groupId>
+      <groupId>org.springframework.extensions.surf</groupId>
       <artifactId>spring-webscripts-api</artifactId>
-      <version>1.0.0.CI-SNAPSHOT</version>
+      <version>1.0.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
