@@ -4,7 +4,7 @@
   <url>/bulk/import/filesystem/initiate</url>
   <authentication>admin</authentication>
   <transaction>none</transaction>
-  <family>Bulk Filesystem Import</family>
+  <family>Bulk Filesystem Import (Community maintained)</family>
   <cache>
     <never>true</never>
   </cache>

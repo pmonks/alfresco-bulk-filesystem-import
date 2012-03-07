@@ -2,7 +2,7 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Bulk Filesystem Import Tool</title>
+    <title>Bulk Filesystem Import Tool (Community maintained)</title>
     <link rel="stylesheet" href="${url.context}/css/main.css" TYPE="text/css">
 
     <!-- YUI 3.x -->
@@ -55,13 +55,12 @@
     </script>
   </head>
   <body class="yui-skin-sam">
-    <table>
-      <tr>
-        <td><img src="${url.context}/images/logo/AlfrescoLogo32.png" alt="Alfresco" /></td>
-        <td><nobr>Bulk Filesystem Import Tool</nobr></td>
-      </tr>
-      <tr><td><td>Alfresco ${server.edition} v${server.version}
-    </table>
+    <p>
+      <img align="left" src="${url.context}/images/logo/AlfrescoLogo32.png" alt="Alfresco" />
+      <strong>Bulk Filesystem Import Tool (Community maintained)</strong><br/>
+      Alfresco ${server.edition} v${server.version}
+    </p>
+    <p>Please see the <a target="_blank" href="http://code.google.com/p/alfresco-bulk-filesystem-import/">project site</a> for documentation, known issues, updated versions, etc.</p>
     <form action="${url.service}/initiate" method="get" enctype="multipart/form-data" charset="utf-8" onsubmit="return validateForm(this);">
       <table>
         <tr>

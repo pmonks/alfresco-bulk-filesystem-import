@@ -4,7 +4,7 @@
   <url>/bulk/import/filesystem/ajax/suggest/spaces?query={query}</url>
   <authentication>admin</authentication>
   <format default="json">any</format>
-  <family>Bulk Filesystem Import</family>
+  <family>Bulk Filesystem Import (Community maintained)</family>
   <cache>
     <never>true</never>
   </cache>
