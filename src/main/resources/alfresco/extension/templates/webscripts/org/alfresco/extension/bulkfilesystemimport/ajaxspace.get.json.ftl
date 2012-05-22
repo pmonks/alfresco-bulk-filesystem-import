@@ -14,11 +14,15 @@
 {
   "data" :
   [
-[#list matches as match]
-    {
-      "path"    : "[@fullPath node=match/]",
-      "nodeRef" : "${match.nodeRef}"
-    }[#if match != matches?last],[/#if]
-[/#list]
+  [#if matches??]
+    [#list matches as match]
+      [#if match??]
+        {
+          "path"    : "[@fullPath node=match/]",
+          "nodeRef" : "${match.nodeRef}"
+        }[#if match != matches?last],[/#if]
+      [/#if]
+    [/#list]
+  [/#if]
   ]
 }
