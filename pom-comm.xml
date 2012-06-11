@@ -11,94 +11,75 @@
 <!--
   <packaging>jar</packaging>
 -->
-  <name>Alfresco Bulk Filesystem Import (for Alfresco Community)</name>
-  <version>1.1-SNAPSHOT</version>
+  <name>Alfresco Bulk Filesystem Import (Community)</name>
+  <version>1.2-SNAPSHOT</version>
 
-  <repositories>
-    <repository>
-      <id>jboss-public</id>
-      <name>JBoss Public Repository</name>
-      <url>http://repository.jboss.org/nexus/content/groups/public</url>
-    </repository>
-    <repository>
-      <id>spring-milestones</id>
-      <name>Spring Milestone Repository</name>
-      <url>http://extensions.springframework.org/milestone</url>
-    </repository>
-    <repository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshot Repository</name>
-      <url>http://extensions.springframework.org/snapshot</url>
-    </repository>
-    <repository>
-      <id>alfresco-public</id>
-      <name>Alfresco Public Repository</name>
-      <url>http://maven.alfresco.com/nexus/content/repositories/releases</url>
-    </repository>
-  </repositories>
+  <licenses>
+    <license>
+      <name>Apache License 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>alfresco-public</id>
-      <name>Alfresco</name>
-      <url>http://maven.alfresco.com/nexus/content/repositories/releases</url>
-    </pluginRepository>
-  </pluginRepositories>
+  <developers>
+    <developer>
+      <id>pmonks</id>
+      <name>Peter Monks</name>
+      <email>pmonks@gmail.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:hg:https://code.google.com/p/alfresco-bulk-filesystem-import/</connection>
+    <developerConnection>scm:hg:https://code.google.com/p/alfresco-bulk-filesystem-import/</developerConnection>
+    <url>https://code.google.com/p/alfresco-bulk-filesystem-import/</url>
+  </scm>
+
+  <issueManagement>
+    <system>Google Code</system>
+    <url>http://code.google.com/p/alfresco-bulk-filesystem-import/issues/list</url>
+  </issueManagement>
+
+  <properties>
+    <version.alfresco>4.0.d</version.alfresco>
+    <version.webscripts>1.0.0</version.webscripts>
+    <version.junit>4.10</version.junit>
+    <version.amp-plugin>3.0.4</version.amp-plugin>
+  </properties>
 
   <dependencies>
-    <!-- Non-Alfresco dependencies -->
-
-    <!-- Alfresco Community 3.3.0-preview-1 (as of 2010-12-05 maven.alfresco.com doesn't have the final Alfresco Community 3.3 artifacts) -->
+    <!-- Alfresco Enterprise -->
     <dependency>
       <groupId>org.alfresco</groupId>
       <artifactId>alfresco-core</artifactId>
-      <version>3.3.0-preview-1</version>
+      <version>${version.alfresco}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.alfresco</groupId>
+      <artifactId>alfresco-data-model</artifactId>
+      <version>${version.alfresco}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.alfresco</groupId>
       <artifactId>alfresco-repository</artifactId>
-      <version>3.3.0-preview-1</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.alfresco</groupId>
-      <artifactId>alfresco-webscript-framework</artifactId>
-      <version>3.3.0-preview-1</version>
-      <scope>provided</scope>
-    </dependency>
-    <!-- Non Alfresco dependencies - only required for community artifacts
-         since they have incomplete POMs -->
-    <dependency>
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-      <version>2.3</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging-api</artifactId>
-      <version>1.1</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-      <version>3.0.2.RELEASE</version>
+      <version>${version.alfresco}</version>
       <scope>provided</scope>
     </dependency>
 
     <!-- Non-Alfresco dependencies -->
     <dependency>
-	  <groupId>org.springframework.extensions.surf</groupId>
+      <groupId>org.springframework.extensions.surf</groupId>
       <artifactId>spring-webscripts-api</artifactId>
-      <version>1.0.0.CI-SNAPSHOT</version>
+      <version>${version.webscripts}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.0</version>
+      <version>${version.junit}</version>
       <type>jar</type>
       <scope>test</scope>
       <optional>true</optional>
@@ -108,18 +89,22 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.5.1</version>
         <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
+          <source>1.6</source>
+          <target>1.6</target>
+          <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.alfresco.maven.plugin</groupId>
         <artifactId>maven-amp-plugin</artifactId>
-        <version>3.0.2</version>
+        <version>${version.amp-plugin}</version>
         <extensions>true</extensions>
         <configuration>
+          <mAmpJarExcludes>alfresco/module/**,alfresco/extension/**,alfresco/messages/**</mAmpJarExcludes>
           <archive>
             <addMavenDescriptor>false</addMavenDescriptor>
           </archive>

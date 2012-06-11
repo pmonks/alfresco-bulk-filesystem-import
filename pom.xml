@@ -14,12 +14,58 @@
   <name>Alfresco Bulk Filesystem Import</name>
   <version>1.2-SNAPSHOT</version>
 
+  <licenses>
+    <license>
+      <name>Apache License 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>pmonks</id>
+      <name>Peter Monks</name>
+      <email>pmonks@gmail.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:hg:https://code.google.com/p/alfresco-bulk-filesystem-import/</connection>
+    <developerConnection>scm:hg:https://code.google.com/p/alfresco-bulk-filesystem-import/</developerConnection>
+    <url>https://code.google.com/p/alfresco-bulk-filesystem-import/</url>
+  </scm>
+
+  <issueManagement>
+    <system>Google Code</system>
+    <url>http://code.google.com/p/alfresco-bulk-filesystem-import/issues/list</url>
+  </issueManagement>
+
+  <properties>
+    <version.alfresco>4.0.1</version.alfresco>
+    <version.webscripts>1.0.0</version.webscripts>
+    <version.junit>4.10</version.junit>
+    <version.amp-plugin>3.0.4</version.amp-plugin>
+  </properties>
+
   <dependencies>
     <!-- Alfresco Enterprise -->
     <dependency>
-      <groupId>org.alfresco</groupId>
+      <groupId>org.alfresco.enterprise</groupId>
+      <artifactId>alfresco-core</artifactId>
+      <version>${version.alfresco}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.alfresco.enterprise</groupId>
+      <artifactId>alfresco-data-model</artifactId>
+      <version>${version.alfresco}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.alfresco.enterprise</groupId>
       <artifactId>alfresco-repository</artifactId>
-      <version>4.0.0</version>
+      <version>${version.alfresco}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -27,13 +73,13 @@
     <dependency>
       <groupId>org.springframework.extensions.surf</groupId>
       <artifactId>spring-webscripts-api</artifactId>
-      <version>1.0.0</version>
+      <version>${version.webscripts}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.0</version>
+      <version>${version.junit}</version>
       <type>jar</type>
       <scope>test</scope>
       <optional>true</optional>
@@ -45,7 +91,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
+        <version>2.5.1</version>
         <configuration>
           <source>1.6</source>
           <target>1.6</target>
@@ -55,7 +101,7 @@
       <plugin>
         <groupId>org.alfresco.maven.plugin</groupId>
         <artifactId>maven-amp-plugin</artifactId>
-        <version>3.0.4</version>
+        <version>${version.amp-plugin}</version>
         <extensions>true</extensions>
         <configuration>
           <mAmpJarExcludes>alfresco/module/**,alfresco/extension/**,alfresco/messages/**</mAmpJarExcludes>
