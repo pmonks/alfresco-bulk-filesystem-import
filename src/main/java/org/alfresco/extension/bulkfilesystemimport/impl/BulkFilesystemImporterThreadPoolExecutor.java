@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007-2012 Peter Monks.
+ *               2012      Alain Sahli - Fix for issue 109: http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=109.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,26 +41,33 @@ public class BulkFilesystemImporterThreadPoolExecutor
     private final static int      DEFAULT_MAXIMUM_CORE_POOL_SIZE = Runtime.getRuntime().availableProcessors() * 2;   // We naively assume 50+% of time is spent blocked on I/O
     private final static long     DEFAULT_KEEP_ALIVE_TIME        = 1L;
     private final static TimeUnit DEFAULT_KEEP_ALIVE_TIME_UNIT   = TimeUnit.MINUTES;
+    private final static int      DEFAULT_BLOCKING_QUEUE_SIZE    = 10000;
     
     
     public BulkFilesystemImporterThreadPoolExecutor()
     {
-        this(DEFAULT_CORE_POOL_SIZE, DEFAULT_MAXIMUM_CORE_POOL_SIZE, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_TIME_UNIT);
+        this(DEFAULT_CORE_POOL_SIZE, DEFAULT_MAXIMUM_CORE_POOL_SIZE, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_TIME_UNIT, DEFAULT_BLOCKING_QUEUE_SIZE);
     }
     
     public BulkFilesystemImporterThreadPoolExecutor(final int corePoolSize, final int maximumPoolSize)
     {
-        this(corePoolSize, maximumPoolSize, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_TIME_UNIT);
+        this(corePoolSize, maximumPoolSize, DEFAULT_KEEP_ALIVE_TIME, DEFAULT_KEEP_ALIVE_TIME_UNIT, DEFAULT_BLOCKING_QUEUE_SIZE);
     }
     
-    public BulkFilesystemImporterThreadPoolExecutor(final int corePoolSize, final int maximumPoolSize, final long keepAliveTime, final TimeUnit keepAliveTimeUnit)
+    public BulkFilesystemImporterThreadPoolExecutor(final int      corePoolSize,
+                                                    final int      maximumPoolSize,
+                                                    final long     keepAliveTime,
+                                                    final TimeUnit keepAliveTimeUnit,
+                                                    final int      blockingQueueSize)
     {
-        super(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveTimeUnit, new LinkedBlockingQueue<Runnable>(), new BulkFilesystemImporterThreadFactory());
+        super(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveTimeUnit, new LinkedBlockingQueue<Runnable>(blockingQueueSize), new BulkFilesystemImporterThreadFactory());
+        this.setRejectedExecutionHandler(new CallerRunsPolicy());
         
         if (log.isDebugEnabled()) log.debug("Creating new bulk import thread pool." +
                                             "\n\tcorePoolSize = " + corePoolSize +
                                             "\n\tmaximumPoolSize = " + maximumPoolSize +
-                                            "\n\tkeepAliveTime = " + keepAliveTime + " " + String.valueOf(keepAliveTimeUnit));
+                                            "\n\tkeepAliveTime = " + keepAliveTime + " " + String.valueOf(keepAliveTimeUnit) +
+                                            "\n\tblockingQueueSize = " + blockingQueueSize);
     }
     
 }
