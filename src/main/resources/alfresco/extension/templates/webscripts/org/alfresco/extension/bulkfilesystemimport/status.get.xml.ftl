@@ -38,7 +38,8 @@
 [#if importStatus.durationInNs??]
   <DurationInNS>${importStatus.durationInNs?c}</DurationInNS>
 [/#if]
-  <CompletedBatches>${importStatus.numberOfBatchesCompleted}</CompletedBatches>
+  <CompletedBatches>${importStatus.numberOfBatchesCompleted?c}</CompletedBatches>
+  <CurrentFileOrFolder>${importStatus.currentFileBeingProcessed!"n/a"}</CurrentFileOrFolder>
   <SourceStatistics>
     <LastFileOrFolderProcessed>${importStatus.currentFileBeingProcessed!"n/a"}</LastFileOrFolderProcessed>
     <FilesScanned>${importStatus.numberOfFilesScanned?c}</FilesScanned>

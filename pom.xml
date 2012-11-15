@@ -46,6 +46,8 @@
     <version.webscripts>1.0.0</version.webscripts>
     <version.junit>4.10</version.junit>
     <version.amp-plugin>3.0.4</version.amp-plugin>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
   <dependencies>
