@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
 import org.alfresco.service.ServiceRegistry;
+import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.model.FileExistsException;
 import org.alfresco.service.cmr.model.FileFolderService;
 import org.alfresco.service.cmr.model.FileInfo;
@@ -159,7 +161,69 @@ public abstract class AbstractBulkFilesystemImporter
         validateNodeRefIsWritableSpace(target);
         validateFileIsReadableDirectory(source);
         
+        if (log.isDebugEnabled())
+        {
+            log.debug("---- Data Dictionary:\n" + dumpDataDictionaryToString());
+        }
+        
         bulkImportImpl(target, source, replaceExisting, isInContentStore(source));
+    }
+    
+    
+    private final String dumpDataDictionaryToString()
+    {
+        StringBuffer      result            = new StringBuffer(2048);
+        DictionaryService dictionaryService = serviceRegistry.getDictionaryService();
+        Collection<QName> models            = dictionaryService.getAllModels();
+        
+        result.append("Models:");
+        
+        if (models != null && !models.isEmpty())
+        {
+            for (QName model : models)
+            {
+                result.append("\n\t{");
+                result.append(model.getNamespaceURI());
+                result.append("}");
+                result.append(model.getLocalName());
+                
+                result.append(dumpQNameList("Types", dictionaryService.getTypes(model)));
+                result.append(dumpQNameList("Aspects", dictionaryService.getAspects(model)));
+            }
+        }
+        else
+        {
+            result.append("\n\t<none>");
+        }
+        
+        return(result.toString());
+    }
+    
+    
+    private final String dumpQNameList(String name, Collection<QName> qnameList)
+    {
+        StringBuffer result = new StringBuffer(1024);
+        
+        result.append("\n\t\t");
+        result.append(name);
+        result.append(":");
+        
+        if (qnameList != null && !qnameList.isEmpty())
+        {
+            for (QName qname : qnameList)
+            {
+                result.append("\n\t\t\t{");
+                result.append(qname.getNamespaceURI());
+                result.append("}");
+                result.append(qname.getLocalName());
+            }
+        }
+        else
+        {
+            result.append("\n\t\t\t<none>");
+        }
+        
+        return(result.toString());
     }
     
     

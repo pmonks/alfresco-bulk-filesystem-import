@@ -42,8 +42,8 @@
   </issueManagement>
 
   <properties>
-    <version.alfresco>4.0.2</version.alfresco>
-    <version.webscripts>1.0.0</version.webscripts>
+    <version.alfresco>4.1.1</version.alfresco>
+    <version.webscripts>1.2.0-M3</version.webscripts>
     <version.junit>4.10</version.junit>
     <version.amp-plugin>3.0.4</version.amp-plugin>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
