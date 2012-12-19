@@ -16,6 +16,12 @@
   <bean id="bfsit-status" class="org.alfresco.extension.bulkfilesystemimport.impl.BulkImportStatusImpl" />
 
 
+  <!-- Data Dictionary -->
+  <bean id="bfsit-data-dictionary-builder" class="org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilderImpl">
+    <constructor-arg index="0" ref="ServiceRegistry" />
+  </bean>
+
+
   <!-- Directory analyser -->
   <bean id="bfsit-directory-analyser" class="org.alfresco.extension.bulkfilesystemimport.impl.DirectoryAnalyserImpl">
     <constructor-arg index="0" ref="bfsit-metadata-loader" />
@@ -45,6 +51,7 @@
     <constructor-arg index="1" ref="policyBehaviourFilter" />
     <constructor-arg index="2" ref="fileContentStore" />
     <constructor-arg index="3" ref="bfsit-status" />
+    <constructor-arg index="4" ref="bfsit-data-dictionary-builder" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
@@ -62,7 +69,8 @@
     <constructor-arg index="1" ref="policyBehaviourFilter" /> 
     <constructor-arg index="2" ref="fileContentStore" />
     <constructor-arg index="3" ref="bfsit-status" />
-    <constructor-arg index="4" ref="bfsit-thread-factory" />
+    <constructor-arg index="4" ref="bfsit-data-dictionary-builder" />
+    <constructor-arg index="5" ref="bfsit-thread-factory" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
@@ -77,6 +85,7 @@
     <constructor-arg index="1" ref="policyBehaviourFilter" /> 
     <constructor-arg index="2" ref="fileContentStore" />
     <constructor-arg index="3" ref="bfsit-status" />
+    <constructor-arg index="4" ref="bfsit-data-dictionary-builder" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />

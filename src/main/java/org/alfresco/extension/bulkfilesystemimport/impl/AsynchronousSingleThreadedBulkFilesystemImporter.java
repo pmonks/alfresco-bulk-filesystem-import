@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
+import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
@@ -48,13 +49,14 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
     
     private final ThreadFactory threadFactory;
     
-    public AsynchronousSingleThreadedBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
-                                                            final BehaviourFilter      behaviourFilter,
-                                                            final ContentStore         configuredContentStore,
-                                                            final BulkImportStatusImpl importStatus,
-                                                            final ThreadFactory        threadFactory)
+    public AsynchronousSingleThreadedBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
+                                                            final BehaviourFilter       behaviourFilter,
+                                                            final ContentStore          configuredContentStore,
+                                                            final BulkImportStatusImpl  importStatus,
+                                                            final DataDictionaryBuilder dataDictionaryBuilder,
+                                                            final ThreadFactory         threadFactory)
     {
-        super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus);
+        super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus, dataDictionaryBuilder);
         
         this.threadFactory = threadFactory;
     }

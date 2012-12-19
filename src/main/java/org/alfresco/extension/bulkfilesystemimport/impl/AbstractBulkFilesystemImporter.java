@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +46,6 @@ import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
 import org.alfresco.service.ServiceRegistry;
-import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.model.FileExistsException;
 import org.alfresco.service.cmr.model.FileFolderService;
 import org.alfresco.service.cmr.model.FileInfo;
@@ -73,6 +71,7 @@ import org.alfresco.extension.bulkfilesystemimport.ImportableItem;
 import org.alfresco.extension.bulkfilesystemimport.MetadataLoader;
 import org.alfresco.extension.bulkfilesystemimport.ImportFilter;
 import org.alfresco.extension.bulkfilesystemimport.impl.BulkImportStatusImpl.NodeState;
+import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 
 
 /**
@@ -99,7 +98,8 @@ public abstract class AbstractBulkFilesystemImporter
     protected final VersionService       versionService;
     protected final MimetypeService      mimeTypeService;
     
-    protected final BulkImportStatusImpl importStatus;
+    protected final BulkImportStatusImpl  importStatus;
+    protected final DataDictionaryBuilder dataDictionaryBuilder;
 
     private DirectoryAnalyser  directoryAnalyser = null;
     private List<ImportFilter> importFilters     = null;
@@ -107,10 +107,11 @@ public abstract class AbstractBulkFilesystemImporter
     private int                batchWeight       = DEFAULT_BATCH_WEIGHT;
 
 
-    protected AbstractBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
-                                             final BehaviourFilter      behaviourFilter,
-                                             final ContentStore         configuredContentStore,
-                                             final BulkImportStatusImpl importStatus)
+    protected AbstractBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
+                                             final BehaviourFilter       behaviourFilter,
+                                             final ContentStore          configuredContentStore,
+                                             final BulkImportStatusImpl  importStatus,
+                                             final DataDictionaryBuilder dataDictionaryBuilder)
     {
         this.serviceRegistry        = serviceRegistry;
         this.behaviourFilter        = behaviourFilter;
@@ -122,7 +123,9 @@ public abstract class AbstractBulkFilesystemImporter
         this.mimeTypeService   = serviceRegistry.getMimetypeService();
         
         this.importStatus      = importStatus;
-        this.importFilters     = new ArrayList<ImportFilter>();
+        
+        this.dataDictionaryBuilder = dataDictionaryBuilder;
+        this.importFilters         = new ArrayList<ImportFilter>();
     }
     
     public final void setDirectoryAnalyser(final DirectoryAnalyser directoryAnalyser)
@@ -163,67 +166,10 @@ public abstract class AbstractBulkFilesystemImporter
         
         if (log.isDebugEnabled())
         {
-            log.debug("---- Data Dictionary:\n" + dumpDataDictionaryToString());
+            log.debug("---- Data Dictionary:\n" + dataDictionaryBuilder.toString());
         }
         
         bulkImportImpl(target, source, replaceExisting, isInContentStore(source));
-    }
-    
-    
-    private final String dumpDataDictionaryToString()
-    {
-        StringBuffer      result            = new StringBuffer(2048);
-        DictionaryService dictionaryService = serviceRegistry.getDictionaryService();
-        Collection<QName> models            = dictionaryService.getAllModels();
-        
-        result.append("Models:");
-        
-        if (models != null && !models.isEmpty())
-        {
-            for (QName model : models)
-            {
-                result.append("\n\t{");
-                result.append(model.getNamespaceURI());
-                result.append("}");
-                result.append(model.getLocalName());
-                
-                result.append(dumpQNameList("Types", dictionaryService.getTypes(model)));
-                result.append(dumpQNameList("Aspects", dictionaryService.getAspects(model)));
-            }
-        }
-        else
-        {
-            result.append("\n\t<none>");
-        }
-        
-        return(result.toString());
-    }
-    
-    
-    private final String dumpQNameList(String name, Collection<QName> qnameList)
-    {
-        StringBuffer result = new StringBuffer(1024);
-        
-        result.append("\n\t\t");
-        result.append(name);
-        result.append(":");
-        
-        if (qnameList != null && !qnameList.isEmpty())
-        {
-            for (QName qname : qnameList)
-            {
-                result.append("\n\t\t\t{");
-                result.append(qname.getNamespaceURI());
-                result.append("}");
-                result.append(qname.getLocalName());
-            }
-        }
-        else
-        {
-            result.append("\n\t\t\t<none>");
-        }
-        
-        return(result.toString());
     }
     
     

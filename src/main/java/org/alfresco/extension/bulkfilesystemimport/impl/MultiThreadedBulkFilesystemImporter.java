@@ -28,6 +28,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
+import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
@@ -58,22 +59,24 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
     private ThreadPoolExecutor threadPool;
     
     
-    public MultiThreadedBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
-                                               final BehaviourFilter      behaviourFilter,
-                                               final ContentStore         configuredContentStore,
-                                               final BulkImportStatusImpl importStatus)
+    public MultiThreadedBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
+                                               final BehaviourFilter       behaviourFilter,
+                                               final ContentStore          configuredContentStore,
+                                               final BulkImportStatusImpl  importStatus,
+                                               final DataDictionaryBuilder dataDictionaryBuilder)
     {
-        this(serviceRegistry, behaviourFilter, configuredContentStore, importStatus, DEFAULT_COMPLETION_CHECK_INTERVAL_MS);
+        this(serviceRegistry, behaviourFilter, configuredContentStore, importStatus, dataDictionaryBuilder, DEFAULT_COMPLETION_CHECK_INTERVAL_MS);
     }
 
 
-    public MultiThreadedBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
-                                               final BehaviourFilter      behaviourFilter,
-                                               final ContentStore         configuredContentStore,
-                                               final BulkImportStatusImpl importStatus,
-                                               final long                 completionCheckIntervalMs)
+    public MultiThreadedBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
+                                               final BehaviourFilter       behaviourFilter,
+                                               final ContentStore          configuredContentStore,
+                                               final BulkImportStatusImpl  importStatus,
+                                               final DataDictionaryBuilder dataDictionaryBuilder,
+                                               final long                  completionCheckIntervalMs)
     {
-        super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus);
+        super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus, dataDictionaryBuilder);
         
         this.completionCheckIntervalMs = completionCheckIntervalMs;
         this.numberOfActiveUnitsOfWork = new AtomicLong();
