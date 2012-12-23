@@ -8,7 +8,9 @@
 [/#if]
 [/#compress]",
   "resultOfLastExecution" : "[#compress]
-[#if importStatus.lastExceptionAsString??]
+[#if importStatus.inProgress()]
+    n/a
+[#elseif importStatus.lastExceptionAsString??]
     Failed
 [#else]
     Succeeded
@@ -29,10 +31,10 @@
   "activeThreads" : ${importStatus.numberOfActiveThreads?c},
 [/#if]
 [#if importStatus.startDate??]
-  "startDate" : "${importStatus.startDate?datetime?string("yyyy-MM-dd'T'HH:mm:ss.SSS")}",
+  "startDate" : "${importStatus.startDate?datetime?iso_utc}",
 [/#if]
 [#if importStatus.endDate??]
-  "endDate" : "${importStatus.endDate?datetime?string("yyyy-MM-dd'T'HH:mm:ss.SSS")}",
+  "endDate" : "${importStatus.endDate?datetime?iso_utc}",
 [/#if]
 [#if importStatus.durationInNs??]
   "durationInNS" : ${importStatus.durationInNs?c},

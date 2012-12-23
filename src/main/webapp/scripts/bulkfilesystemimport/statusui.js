@@ -25,6 +25,7 @@
 var statusURI;
 var previousData;
 var currentData;
+var spinner;
 var filesPerSecondChart;
 var bytesPerSecondChart;
 var getImportStatusTimer;
@@ -39,6 +40,7 @@ function onLoad(alfrescoWebScriptContext, filesPerSecondCanvasElement, bytesPerS
   statusURI = alfrescoWebScriptContext + "/bulk/import/filesystem/status.json";
   
   getStatusInfo();  // Pull down an initial set of status info
+  startSpinner();
   startImportStatusTimer();
   startRefreshTextTimer();
   startFilesPerSecondChart(filesPerSecondCanvasElement);
@@ -75,27 +77,66 @@ function getStatusInfo()
         catch (e)
         {
           //####TODO: better error handling...
-          document.getElementById("errorMessage").innerHTML = "JSON parsing exception: " + e;
+          document.getElementById("errorMessage").textContent = "JSON parsing exception: " + e;
         }
       });
-
-      // If we're idle, stop the world
-      if (currentData != null && currentData.currentStatus === "Idle")
+      
+      if (currentData != null)
       {
-        // Update the text one last time
-        refreshTextElements(currentData);
-        
-        // Kill all the timers
-        if (filesPerSecondChart  != null) filesPerSecondChart.stop();
-        if (bytesPerSecondChart  != null) bytesPerSecondChart.stop();
-        if (getImportStatusTimer != null) getImportStatusTimer.stop();
-        if (refreshTextTimer     != null) refreshTextTimer.stop();
+        // If we're idle, stop the world
+        if (currentData.currentStatus === "Idle")
+        {
+          // Kill all the spinners, charts and timers
+          if (spinner              != null) spinner.stop();
+          if (filesPerSecondChart  != null) filesPerSecondChart.stop();
+          if (bytesPerSecondChart  != null) bytesPerSecondChart.stop();
+          if (getImportStatusTimer != null) getImportStatusTimer.stop();
+          if (refreshTextTimer     != null) refreshTextTimer.stop();
+          
+          // Update the current status
+          document.getElementById("spinner").style.display               = "none";
+          document.getElementById("currentStatus").textContent           = currentData.currentStatus;
+          document.getElementById("currentStatus").style.color           = "green";
+          document.getElementById("initiateAnotherImport").style.display = "inline";
+          
+          // Update the text one last time
+          refreshTextElements(currentData);
+        }
+        else  // We're not idle, so update the duration in the current status
+        {
+          document.getElementById("currentStatus").textContent = currentData.currentStatus + " " + formatDuration(currentData.durationInNS, false);
+        }
       }
     };
 
     Y.on('io:complete', complete, Y, null);
     var request = Y.io(statusURI);
   });
+}
+
+
+function startSpinner()
+{
+  var spinnerOptions = {
+    lines: 13, // The number of lines to draw
+    length: 7, // The length of each line
+    width: 4, // The line thickness
+    radius: 10, // The radius of the inner circle
+    corners: 1, // Corner roundness (0..1)
+    rotate: 0, // The rotation offset
+    color: '#000', // #rgb or #rrggbb
+    speed: 1, // Rounds per second
+    trail: 60, // Afterglow percentage
+    shadow: false, // Whether to render a shadow
+    hwaccel: true, // Whether to use hardware acceleration
+    className: 'spinner', // The CSS class to assign to the spinner
+    zIndex: 2e9, // The z-index (defaults to 2000000000)
+    top: 'auto', // Top position relative to parent in px
+    left: 'auto' // Left position relative to parent in px
+  };
+  var target = document.getElementById('spinner');
+  
+  spinner = new Spinner(spinnerOptions).spin(target);
 }
 
 
@@ -137,7 +178,7 @@ function startRefreshTextTimer()
 	      refreshTextElements(currentData);
 	    };
 	
-	  refreshTextTimer = new Y.Timer( { length : 2000, repeatCount : 0, callback : refreshText } );
+	  refreshTextTimer = new Y.Timer( { length : 5000, repeatCount : 0, callback : refreshText } );
 	
 	  refreshTextTimer.on('timer:start', function(e) { Y.log('Refresh text timer started', 'debug') });
 	  refreshTextTimer.on('timer:stop',  function(e) { Y.log('Refresh text timer stopped', 'debug') });
@@ -268,19 +309,26 @@ function refreshTextElements(cd)
 {
   if (cd != null)
   {
-    // Status
-    document.getElementById("currentStatus").textContent = cd.currentStatus;
-    if (cd.currentStatus === "Idle") document.getElementById("currentStatus").style.color = "green";
+    // Successful
+    document.getElementById("detailsSuccessful").textContent = cd.resultOfLastExecution;
+    if (cd.resultOfLastExecution === "Succeeded") document.getElementById("detailsSuccessful").style.color = "green";
+    if (cd.resultOfLastExecution === "Failed")    document.getElementById("detailsSuccessful").style.color = "red";
     
     // Threads
-    document.getElementById("detailsActiveThreads").textContent = cd.activeThreads;
+    if (cd.activeThreads === undefined)
+    {
+      document.getElementById("detailsActiveThreads").textContent = "0";
+    }
+    else
+    {
+      document.getElementById("detailsActiveThreads").textContent = cd.activeThreads;
+    }
     
     // End date
-    if (cd.endDate) document.getElementById("detailsEndDate").textContent = cd.endDate;  //####TODO: format this
+    if (cd.endDate) document.getElementById("detailsEndDate").textContent = cd.endDate;
     
     // Duration
-    document.getElementById("detailsDurationCaption").textContent = cd.endDate ? "Duration:" : "Elapsed Time:";
-    document.getElementById("detailsDuration").textContent        = formatDuration(cd.durationInNS);
+    if (cd.durationInNS) document.getElementById("detailsDuration").textContent = formatDuration(cd.durationInNS, true);
     
     // Completed batches
     document.getElementById("detailsCompletedBatches").textContent = cd.completedBatches;
@@ -346,7 +394,7 @@ function refreshTextElements(cd)
 }
 
 
-function formatDuration(durationInNs)
+function formatDuration(durationInNs, details)
 {
   var days         = Math.floor(durationInNs / (1000 * 1000 * 1000 * 60 * 60 * 24));
   var hours        = Math.floor(durationInNs / (1000 * 1000 * 1000 * 60 * 60)) % 24;
@@ -355,7 +403,14 @@ function formatDuration(durationInNs)
   var milliseconds = Math.floor(durationInNs / (1000 * 1000)) % 1000;
   var microseconds = Math.floor(durationInNs / (1000)) % 1000;
   
-  return("" + days + "d " + hours + "h " + minutes + "m " + seconds + "s " + milliseconds + "." + microseconds + "ms");
+  if (details === true)
+  {
+    return("" + days + "d " + hours + "h " + minutes + "m " + seconds + "s " + milliseconds + "." + microseconds + "ms");
+  }
+  else
+  {
+    return("" + days + "d " + hours + "h " + minutes + "m " + seconds + "s ");
+  }
 }
 
 

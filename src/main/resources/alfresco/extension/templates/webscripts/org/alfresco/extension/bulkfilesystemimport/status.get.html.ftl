@@ -28,6 +28,7 @@
   <link rel="stylesheet" href="${url.context}/css/main.css" type="text/css"/>
   <script src="http://yui.yahooapis.com/3.7.3/build/yui/yui-min.js"></script>
   <script src="${url.context}/scripts/bulkfilesystemimport/smoothie.js"></script>
+  <script src="${url.context}/scripts/bulkfilesystemimport/spin.min.js"></script>
   <script src="${url.context}/scripts/bulkfilesystemimport/statusui.js"></script>
 </head>
 <body onload="onLoad('${url.serviceContext}', document.getElementById('filesPerSecondChart'), document.getElementById('bytesPerSecondChart'));">
@@ -41,11 +42,14 @@
   <blockquote>
     <p>
 [#if importStatus.inProgress()]
-      <span id="currentStatus" style="color:red;font-weight:bold;font-size:16pt">In progress</span><br/>
+      <div id="currentStatus" style="display:inline-block;height:50px;color:red;font-weight:bold;font-size:16pt">In progress <span id="inProgressDuration"></span></div> <div id="spinner" style="display:inline-block;vertical-align:middle;width:50px;height:50px;margin:0px 20px 0px 20px"></div>
+      <br/>
+      <a id="initiateAnotherImport" style="display:none" href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
 [#else]
-      <span id="currentStatus" style="color:green;font-weight:bold;font-size:16pt">Idle</span><br/>
+      <div id="currentStatus" style="display:inline-block;height:50px;color:green;font-weight:bold;font-size:16pt">Idle</div> <div id="spinner" style="display:inline-block;vertical-align:middle;width:50px;height:50px;margin:0px 20px 0px 20px"></div>
+      <br/>
+      <a id="initiateAnotherImport" href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
 [/#if]
-      <a href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
     </p>
     <p>
       <strong>Files Per Second</strong>
@@ -86,7 +90,7 @@
     </p>
     <div id="detailsShown" style="display:none;valign:top"><a onClick="toggleDivs(document.getElementById('detailsShown'), document.getElementById('detailsHidden'));"><img src="${url.context}/images/icons/arrow_open.gif"/> Details</a>
     <p>
-    Refreshes every 2 seconds.
+    Refreshes every 5 seconds.
     </p>
     <p>
     <table border="1" cellspacing="0" cellpadding="1" width="80%">
@@ -145,7 +149,7 @@
         <td>Start Date:</td>
         <td>
 [#if importStatus.startDate??]
-          ${importStatus.startDate?datetime?string("yyyy-MM-dd hh:mm:ss.SSSaa")}
+          ${importStatus.startDate?datetime?iso_utc}
 [#else]
           n/a
 [/#if]
@@ -155,25 +159,17 @@
         <td>End Date:</td>
         <td id="detailsEndDate">
 [#if importStatus.endDate??]
-          ${importStatus.endDate?datetime?string("yyyy-MM-dd hh:mm:ss.SSSaa")}</td>
+          ${importStatus.endDate?datetime?iso_utc}</td>
 [#else]
           n/a
 [/#if]
         </td>
       </tr>
       <tr>
-        <td id="detailsDurationCaption">
-[#if importStatus.inProgress()]
-          Elapsed Time:
-[#else]
-          Duration:
-[/#if]
-        </td>
+        <td>Duration:</td>
         <td id="detailsDuration">
 [#if importStatus.durationInNs??]
-          [@formatDuration durationInNs = importStatus.durationInNs/]
-[#else]
-          n/a
+          [@formatDuration importStatus.durationInNs /]
 [/#if]
         </td>
       </tr>
