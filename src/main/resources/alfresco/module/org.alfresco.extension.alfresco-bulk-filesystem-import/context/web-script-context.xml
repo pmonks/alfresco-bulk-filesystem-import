@@ -24,4 +24,10 @@
     <constructor-arg index="0" ref="bfsit-importer" /> 
   </bean>
   
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.datadictionary.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemDataDictionaryWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-data-dictionary-builder" />
+  </bean>
+  
 </beans>

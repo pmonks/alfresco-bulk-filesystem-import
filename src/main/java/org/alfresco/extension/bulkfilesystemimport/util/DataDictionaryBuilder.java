@@ -47,5 +47,11 @@ public interface DataDictionaryBuilder
         public Collection<ConstraintDefinition> constraints;
         public Collection<TypeDefinition>       types;
         public Collection<AspectDefinition>     aspects;
+        
+        // Getters required for Freemarker - see http://freemarker.sourceforge.net/docs/pgui_misc_beanwrapper.html#beanswrapper_hash
+        public ModelDefinition                  getModel()       { return(model); }
+        public Collection<ConstraintDefinition> getConstraints() { return(constraints); }
+        public Collection<TypeDefinition>       getTypes()       { return(types); }
+        public Collection<AspectDefinition>     getAspects()     { return(aspects); }
     }
 }
