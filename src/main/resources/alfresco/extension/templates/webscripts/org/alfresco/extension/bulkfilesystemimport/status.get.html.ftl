@@ -26,7 +26,7 @@
 <head>
   <title>Bulk Filesystem Import Status</title>
   <link rel="stylesheet" href="${url.context}/css/main.css" type="text/css"/>
-  <script src="http://yui.yahooapis.com/3.7.3/build/yui/yui-min.js"></script>
+  <script src="http://yui.yahooapis.com/3.8.0/build/simpleyui/simpleyui-min.js"></script>
   <script src="${url.context}/scripts/bulkfilesystemimport/smoothie.js"></script>
   <script src="${url.context}/scripts/bulkfilesystemimport/spin.min.js"></script>
   <script src="${url.context}/scripts/bulkfilesystemimport/statusui.js"></script>
@@ -51,6 +51,10 @@
       <a id="initiateAnotherImport" href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
 [/#if]
     </p>
+    <p>
+      <div id="graphsHidden" style="display:none"><a onClick="toggleDivs(document.getElementById('graphsHidden'), document.getElementById('graphsShown'));"><img style="vertical-align:middle" src="${url.context}/images/icons/arrow_closed.gif"/><span style="vertical-align:middle">Graphs</span></a></div>
+    </p>
+    <div id="graphsShown" style="display:block"><a onClick="toggleDivs(document.getElementById('graphsShown'), document.getElementById('graphsHidden'));"><img style="vertical-align:middle" src="${url.context}/images/icons/arrow_open.gif"/><span style="vertical-align:middle">Graphs</span></a>
     <p>
       <strong>Files Per Second</strong>
     </p>
@@ -85,10 +89,11 @@
         </tr>
       </table>
     </p>
+    </div>
     <p>
-      <div id="detailsHidden" style="display:block;valign:top"><a onClick="toggleDivs(document.getElementById('detailsHidden'), document.getElementById('detailsShown'));"><img src="${url.context}/images/icons/arrow_closed.gif"/> Details</a></div>
+      <div id="detailsHidden" style="display:block"><a onClick="toggleDivs(document.getElementById('detailsHidden'), document.getElementById('detailsShown'));"><img style="vertical-align:middle" src="${url.context}/images/icons/arrow_closed.gif"/><span style="vertical-align:middle">Details</span></a></div>
     </p>
-    <div id="detailsShown" style="display:none;valign:top"><a onClick="toggleDivs(document.getElementById('detailsShown'), document.getElementById('detailsHidden'));"><img src="${url.context}/images/icons/arrow_open.gif"/> Details</a>
+    <div id="detailsShown" style="display:none"><a onClick="toggleDivs(document.getElementById('detailsShown'), document.getElementById('detailsHidden'));"><img style="vertical-align:middle" src="${url.context}/images/icons/arrow_open.gif"/><span style="vertical-align:middle">Details</span></a>
     <p>
     Refreshes every 5 seconds.
     </p>

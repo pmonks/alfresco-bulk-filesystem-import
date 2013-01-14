@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="${url.context}/css/main.css" TYPE="text/css">
 
     <!-- YUI 3.x -->
-    <script src="http://yui.yahooapis.com/3.7.3/build/yui/yui-min.js"></script>
+    <script src="http://yui.yahooapis.com/3.8.0/build/simpleyui/simpleyui-min.js"></script>
     <style type="text/css">
       .yui3-aclist-content {
         background-color   : white;

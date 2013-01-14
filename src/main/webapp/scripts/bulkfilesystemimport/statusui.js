@@ -4,17 +4,17 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  * This file is part of an unsupported extension to Alfresco.
- * 
+ *
  */
 
 /*
@@ -27,7 +27,9 @@ var previousData;
 var currentData;
 var spinner;
 var filesPerSecondChart;
+var filesPerSecondChartTimer;
 var bytesPerSecondChart;
+var bytesPerSecondChartTimer;
 var getImportStatusTimer;
 var refreshTextTimer;
 
@@ -38,69 +40,76 @@ var refreshTextTimer;
 function onLoad(alfrescoWebScriptContext, filesPerSecondCanvasElement, bytesPerSecondCanvasElement)
 {
   statusURI = alfrescoWebScriptContext + "/bulk/import/filesystem/status.json";
-  
+
   getStatusInfo();  // Pull down an initial set of status info
-  startSpinner();
-  startImportStatusTimer();
-  startRefreshTextTimer();
-  startFilesPerSecondChart(filesPerSecondCanvasElement);
-  startBytesPerSecondChart(bytesPerSecondCanvasElement);
+
+  if (currentData != null && currentData.currentStatus === "Idle")
+  {
+    // If the import completed before the page even loaded, update the text area then bomb out
+    refreshTextElements(currentDate);
+  }
+  else
+  {
+    Y.log('Import in progress, starting UI.', 'debug');
+    startSpinner();
+    startImportStatusTimer();
+    startRefreshTextTimer();
+    startFilesPerSecondChart(filesPerSecondCanvasElement);
+    startBytesPerSecondChart(bytesPerSecondCanvasElement);
+  }
 }
 
-
-/*
- * Toggle visibility of two elements
- */
-function toggleDivs(elementToHide, elementToShow)
-{
-  elementToHide.style.display = "none";
-  elementToShow.style.display = "block";
-}
 
 /*
  * Get status information via an AJAX call
  */
 function getStatusInfo()
 {
-  YUI().use("io-base", function(Y)
+  Y.log('Retrieving import status information...', 'debug');
+
+  Y.use("io-base", function(Y)
   {
-    function complete(id, o, args)
+    function success(id, o, args)
     {
       // Parse the JSON response
-      YUI().use('json-parse', function(Y)
+      Y.use('json-parse', function(Y)
       {
         try
         {
-          previousData = currentData;
-          currentData  = Y.JSON.parse(o.responseText);
+          var latestData = Y.JSON.parse(o.responseText);
+          previousData   = deepCopy(currentData);
+          currentData    = deepCopy(latestData);
         }
         catch (e)
         {
-          //####TODO: better error handling...
-          document.getElementById("errorMessage").textContent = "JSON parsing exception: " + e;
+          Y.log('Exception while retrieving status information: ' + e, 'debug');
         }
       });
-      
+
       if (currentData != null)
       {
         // If we're idle, stop the world
         if (currentData.currentStatus === "Idle")
         {
+          Y.log('Import complete, shutting down UI.', 'debug');
+
+          // Update the text one last time
+          refreshTextElements(currentData);
+
           // Kill all the spinners, charts and timers
-          if (spinner              != null) spinner.stop();
-          if (filesPerSecondChart  != null) filesPerSecondChart.stop();
-          if (bytesPerSecondChart  != null) bytesPerSecondChart.stop();
-          if (getImportStatusTimer != null) getImportStatusTimer.stop();
-          if (refreshTextTimer     != null) refreshTextTimer.stop();
-          
+          if (spinner                  != null) spinner.stop();
+          if (filesPerSecondChart      != null) filesPerSecondChart.stop();
+          if (filesPerSecondChartTimer != null) { clearInterval(filesPerSecondChartTimer); filesPerSecondChartTimer = null; }
+          if (bytesPerSecondChart      != null) bytesPerSecondChart.stop();
+          if (bytesPerSecondChartTimer != null) { clearInterval(bytesPerSecondChartTimer); bytesPerSecondChartTimer = null; }
+          if (getImportStatusTimer     != null) getImportStatusTimer.stop();
+          if (refreshTextTimer         != null) refreshTextTimer.stop();
+
           // Update the current status
           document.getElementById("spinner").style.display               = "none";
           document.getElementById("currentStatus").textContent           = currentData.currentStatus;
           document.getElementById("currentStatus").style.color           = "green";
           document.getElementById("initiateAnotherImport").style.display = "inline";
-          
-          // Update the text one last time
-          refreshTextElements(currentData);
         }
         else  // We're not idle, so update the duration in the current status
         {
@@ -109,8 +118,8 @@ function getStatusInfo()
       }
     };
 
-    Y.on('io:complete', complete, Y, null);
-    var request = Y.io(statusURI);
+    var cfg = { on : { success : success } };
+    var request = Y.io(statusURI, cfg);
   });
 }
 
@@ -135,7 +144,7 @@ function startSpinner()
     left: 'auto' // Left position relative to parent in px
   };
   var target = document.getElementById('spinner');
-  
+
   spinner = new Spinner(spinnerOptions).spin(target);
 }
 
@@ -145,22 +154,22 @@ function startSpinner()
  */
 function startImportStatusTimer()
 {
-	YUI( { gallery: 'gallery-2012.07.25-21-36' } ).use('gallery-timer', function(Y)
-	{
-	  var getImportStatus = function()
-	    {
-	      Y.log('Retrieving import status information...', 'debug');
-	
-	      getStatusInfo();
-	    };
-	
-	  getImportStatusTimer = new Y.Timer( { length : 1000, repeatCount : 0, callback : getImportStatus } );
-	
-	  getImportStatusTimer.on('timer:start', function(e) { Y.log('AJAX timer started', 'debug') });
-	  getImportStatusTimer.on('timer:stop',  function(e) { Y.log('AJAX timer stopped', 'debug') });
-	
-	  getImportStatusTimer.start();
-	});
+  Y.log('Starting import status timer...', 'debug');
+
+  Y.use('gallery-timer', function(Y)
+  {
+    var getImportStatus = function()
+      {
+        getStatusInfo();
+      };
+
+    getImportStatusTimer = new Y.Timer( { length : 1000, repeatCount : 0, callback : getImportStatus } );
+
+    getImportStatusTimer.on('timer:start', function(e) { Y.log('Import status timer started', 'debug') });
+    getImportStatusTimer.on('timer:stop',  function(e) { Y.log('Import status timer stopped', 'debug') });
+
+    getImportStatusTimer.start();
+  });
 }
 
 
@@ -169,22 +178,22 @@ function startImportStatusTimer()
  */
 function startRefreshTextTimer()
 {
-  YUI( { gallery: 'gallery-2012.07.25-21-36' } ).use('gallery-timer', function(Y)
+  Y.log('Starting refresh text timer...', 'debug');
+
+  Y.use('gallery-timer', function(Y)
   {
-	  var refreshText = function()
-	    {
-	      Y.log('Refreshing text elements on page...', 'debug');
-	      
-	      refreshTextElements(currentData);
-	    };
-	
-	  refreshTextTimer = new Y.Timer( { length : 5000, repeatCount : 0, callback : refreshText } );
-	
-	  refreshTextTimer.on('timer:start', function(e) { Y.log('Refresh text timer started', 'debug') });
-	  refreshTextTimer.on('timer:stop',  function(e) { Y.log('Refresh text timer stopped', 'debug') });
-	
-	  refreshTextTimer.start();
-	});
+      var refreshText = function()
+        {
+          refreshTextElements(currentData);
+        };
+
+      refreshTextTimer = new Y.Timer( { length : 5000, repeatCount : 0, callback : refreshText } );
+
+      refreshTextTimer.on('timer:start', function(e) { Y.log('Refresh text timer started', 'debug') });
+      refreshTextTimer.on('timer:stop',  function(e) { Y.log('Refresh text timer stopped', 'debug') });
+
+      refreshTextTimer.start();
+    });
 }
 
 
@@ -193,58 +202,66 @@ function startRefreshTextTimer()
  */
 function startFilesPerSecondChart(canvasElement)
 {
-	// Initialise the files per second chart
-	filesPerSecondChart = new SmoothieChart({
-	  grid: { strokeStyle      :'rgb(127, 127, 127)',
-	          fillStyle        :'rgb(0, 0, 0)',
-	          lineWidth        : 1,
-	          millisPerLine    : 500,
-	          verticalSections : 10 },
-	  labels: { fillStyle :'rgb(255, 255, 255)' }
-	});
-	filesPerSecondChart.streamTo(canvasElement, 1000);  // 1 second delay in rendering (for extra smoothiness!)
-	
-	// Data
-	var fileScannedTimeSeries  = new TimeSeries();
-	var filesReadTimeSeries    = new TimeSeries();
-	var nodesCreatedTimeSeries = new TimeSeries();
-	var filesZeroTimeSeries    = new TimeSeries();
-	
-	// Update the graph every second
-	setInterval(function()
-	{
-	  var now            = new Date().getTime();
-	  var pd             = previousData;
-	  var cd             = currentData;
-	  var filesScanned   = 0;
-	  var filesRead      = 0;
-	  var nodesCreated   = 0;
-	
-	  if (cd != null)
-	  {
-	    filesScanned = cd.sourceStatistics.filesScanned;
-	    filesRead    = cd.sourceStatistics.contentFilesRead + cd.sourceStatistics.metadataFilesRead + cd.sourceStatistics.contentVersionFilesRead + cd.sourceStatistics.metadataVersionFilesRead;
-	    nodesCreated = cd.targetStatistics.contentNodesCreated;
-	
-	    if (pd != null)
-	    {
-	      filesScanned = Math.max(0, filesScanned - pd.sourceStatistics.filesScanned);
-	      filesRead    = Math.max(0, filesRead    - (pd.sourceStatistics.contentFilesRead + pd.sourceStatistics.metadataFilesRead + pd.sourceStatistics.contentVersionFilesRead + pd.sourceStatistics.metadataVersionFilesRead));
-	      nodesCreated = Math.max(0, nodesCreated - pd.targetStatistics.contentNodesCreated);
-	    }
-	  }
-	
-	  fileScannedTimeSeries.append( now, filesScanned);
-	  filesReadTimeSeries.append(   now, filesRead);
-	  nodesCreatedTimeSeries.append(now, nodesCreated);
-	  filesZeroTimeSeries.append(   now, 0); // Used to keep a fixed baseline - I don't like how smoothie has a variable baseline
-	}, 1000);  // Update every second
-	
-	// Add the time series' to the chart
-	filesPerSecondChart.addTimeSeries(fileScannedTimeSeries,  { strokeStyle:'rgb(255, 0, 0)', fillStyle:'rgba(255, 0, 0, 0.0)', lineWidth:3 } );
-	filesPerSecondChart.addTimeSeries(filesReadTimeSeries,    { strokeStyle:'rgb(0, 255, 0)', fillStyle:'rgba(0, 255, 0, 0.0)', lineWidth:3 } );
-	filesPerSecondChart.addTimeSeries(nodesCreatedTimeSeries, { strokeStyle:'rgb(0, 0, 255)', fillStyle:'rgba(0, 0, 255, 0.0)', lineWidth:3 } );
-	filesPerSecondChart.addTimeSeries(filesZeroTimeSeries,    { strokeStyle:'rgba(0, 0, 0, 0)', fillStyle:'rgba(0, 0, 0, 0.0)', lineWidth:0 } );
+  Y.log('Starting files per second chart...', 'debug');
+
+  // Initialise the files per second chart
+  filesPerSecondChart = new SmoothieChart({
+    grid: { strokeStyle      :'rgb(127, 127, 127)',
+              fillStyle        :'rgb(0, 0, 0)',
+              lineWidth        : 1,
+              millisPerLine    : 500,
+              verticalSections : 10 },
+      labels: { fillStyle :'rgb(255, 255, 255)' }
+  });
+  filesPerSecondChart.streamTo(canvasElement, 1000);  // 1 second delay in rendering (for extra smoothiness!)
+
+  // Data
+  var fileScannedTimeSeries  = new TimeSeries();
+  var filesReadTimeSeries    = new TimeSeries();
+  var nodesCreatedTimeSeries = new TimeSeries();
+  var filesZeroTimeSeries    = new TimeSeries();
+
+  // Update the graph every second
+  filesPerSecondChartTimer = setInterval(function()
+  {
+    Y.log('Updating files per second chart...', 'debug');
+
+    var now            = new Date().getTime();
+    var pd             = previousData;
+    var cd             = currentData;
+    var filesScanned   = 0;
+    var filesRead      = 0;
+    var nodesCreated   = 0;
+
+    if (cd != null)
+    {
+      filesScanned = cd.sourceStatistics.filesScanned;
+      filesRead    = cd.sourceStatistics.contentFilesRead + cd.sourceStatistics.metadataFilesRead + cd.sourceStatistics.contentVersionFilesRead + cd.sourceStatistics.metadataVersionFilesRead;
+      nodesCreated = cd.targetStatistics.contentNodesCreated;
+
+      if (pd != null)
+      {
+        filesScanned = Math.max(0, filesScanned - pd.sourceStatistics.filesScanned);
+        filesRead    = Math.max(0, filesRead    - (pd.sourceStatistics.contentFilesRead + pd.sourceStatistics.metadataFilesRead + pd.sourceStatistics.contentVersionFilesRead + pd.sourceStatistics.metadataVersionFilesRead));
+        nodesCreated = Math.max(0, nodesCreated - pd.targetStatistics.contentNodesCreated);
+      }
+    }
+    else
+    {
+      Y.log('No status data available for files per second chart.', 'debug');
+    }
+
+    fileScannedTimeSeries.append( now, filesScanned);
+    filesReadTimeSeries.append(   now, filesRead);
+    nodesCreatedTimeSeries.append(now, nodesCreated);
+    filesZeroTimeSeries.append(   now, 0); // Used to keep a fixed baseline - I don't like how smoothie has a variable baseline
+  }, 1000);  // Update every second
+
+  // Add the time series' to the chart
+  filesPerSecondChart.addTimeSeries(fileScannedTimeSeries,  { strokeStyle:'rgb(255, 0, 0)',   fillStyle:'rgba(255, 0, 0, 0.0)', lineWidth:3 } );
+  filesPerSecondChart.addTimeSeries(filesReadTimeSeries,    { strokeStyle:'rgb(0, 255, 0)',   fillStyle:'rgba(0, 255, 0, 0.0)', lineWidth:3 } );
+  filesPerSecondChart.addTimeSeries(nodesCreatedTimeSeries, { strokeStyle:'rgb(0, 0, 255)',   fillStyle:'rgba(0, 0, 255, 0.0)', lineWidth:3 } );
+  filesPerSecondChart.addTimeSeries(filesZeroTimeSeries,    { strokeStyle:'rgba(0, 0, 0, 0)', fillStyle:'rgba(0, 0, 0, 0.0)',   lineWidth:0 } );
 }
 
 
@@ -253,6 +270,8 @@ function startFilesPerSecondChart(canvasElement)
  */
 function startBytesPerSecondChart(canvasElement)
 {
+  Y.log('Starting bytes per second chart...', 'debug');
+
   // Initialise the bytes per second chart
   bytesPerSecondChart = new SmoothieChart({
     grid: { strokeStyle      :'rgb(127, 127, 127)',
@@ -263,42 +282,48 @@ function startBytesPerSecondChart(canvasElement)
     labels: { fillStyle :'rgb(255, 255, 255)' }
   });
   bytesPerSecondChart.streamTo(canvasElement, 1000);  // 1 second delay in rendering (for extra smoothiness!)
-  
+
   // Data
   var bytesReadTimeSeries    = new TimeSeries();
   var bytesWrittenTimeSeries = new TimeSeries();
   var bytesZeroTimeSeries    = new TimeSeries();
-  
+
   // Update the graph every second
-  setInterval(function()
+  bytesPerSecondChartTimer = setInterval(function()
   {
+    Y.log('Updating bytes per second chart...', 'debug');
+
     var now            = new Date().getTime();
     var pd             = previousData;
     var cd             = currentData;
     var bytesRead      = 0;
     var bytesWritten   = 0;
-  
+
     if (cd != null)
     {
       bytesRead    = cd.sourceStatistics.contentBytesRead + cd.sourceStatistics.contentVersionBytesRead;
       bytesWritten = cd.targetStatistics.contentBytesWritten + cd.targetStatistics.contentVersionsBytesWritten;
-  
+
       if (pd != null)
       {
         bytesRead    = Math.max(0, bytesRead    - (pd.sourceStatistics.contentBytesRead + pd.sourceStatistics.contentVersionBytesRead));
         bytesWritten = Math.max(0, bytesWritten - (pd.targetStatistics.contentBytesWritten + pd.targetStatistics.contentVersionsBytesWritten));
       }
     }
-  
+    else
+    {
+      Y.log('No status data available for bytes per second chart.', 'warn');
+    }
+
     bytesReadTimeSeries.append(   now, bytesRead);
     bytesWrittenTimeSeries.append(now, bytesWritten);
     bytesZeroTimeSeries.append(   now, 0); // Used to keep a fixed baseline - I don't like how smoothie has a variable baseline
   }, 1000);  // Update every second
-  
+
   // Add the time series' to the chart
-  bytesPerSecondChart.addTimeSeries(bytesReadTimeSeries,    { strokeStyle:'rgb(0, 255, 0)', fillStyle:'rgba(0, 255, 0, 0.0)', lineWidth:3 } );
-  bytesPerSecondChart.addTimeSeries(bytesWrittenTimeSeries, { strokeStyle:'rgb(0, 0, 255)', fillStyle:'rgba(0, 0, 255, 0.0)', lineWidth:3 } );
-  bytesPerSecondChart.addTimeSeries(bytesZeroTimeSeries,    { strokeStyle:'rgba(0, 0, 0, 0)', fillStyle:'rgba(0, 0, 0, 0.0)', lineWidth:0 } );
+  bytesPerSecondChart.addTimeSeries(bytesReadTimeSeries,    { strokeStyle:'rgb(0, 255, 0)',   fillStyle:'rgba(0, 255, 0, 0.0)', lineWidth:3 } );
+  bytesPerSecondChart.addTimeSeries(bytesWrittenTimeSeries, { strokeStyle:'rgb(0, 0, 255)',   fillStyle:'rgba(0, 0, 255, 0.0)', lineWidth:3 } );
+  bytesPerSecondChart.addTimeSeries(bytesZeroTimeSeries,    { strokeStyle:'rgba(0, 0, 0, 0)', fillStyle:'rgba(0, 0, 0, 0.0)',   lineWidth:0 } );
 }
 
 
@@ -307,13 +332,15 @@ function startBytesPerSecondChart(canvasElement)
  */
 function refreshTextElements(cd)
 {
+  Y.log('Refreshing text elements...', 'debug');
+
   if (cd != null)
   {
     // Successful
     document.getElementById("detailsSuccessful").textContent = cd.resultOfLastExecution;
     if (cd.resultOfLastExecution === "Succeeded") document.getElementById("detailsSuccessful").style.color = "green";
     if (cd.resultOfLastExecution === "Failed")    document.getElementById("detailsSuccessful").style.color = "red";
-    
+
     // Threads
     if (cd.activeThreads === undefined)
     {
@@ -323,19 +350,19 @@ function refreshTextElements(cd)
     {
       document.getElementById("detailsActiveThreads").textContent = cd.activeThreads;
     }
-    
+
     // End date
     if (cd.endDate) document.getElementById("detailsEndDate").textContent = cd.endDate;
-    
+
     // Duration
     if (cd.durationInNS) document.getElementById("detailsDuration").textContent = formatDuration(cd.durationInNS, true);
-    
+
     // Completed batches
     document.getElementById("detailsCompletedBatches").textContent = cd.completedBatches;
-    
+
     // Current file or folder
     document.getElementById("detailsCurrentFileOrFolder").textContent = cd.currentFileOrFolder;
-    
+
     // Source (read) statistics
     document.getElementById("detailsFoldersScanned").textContent           = cd.sourceStatistics.foldersScanned;
     document.getElementById("detailsFilesScanned").textContent             = cd.sourceStatistics.filesScanned;
@@ -348,7 +375,7 @@ function refreshTextElements(cd)
     document.getElementById("detailsContentVersionBytesRead").textContent  = formatBytes(cd.sourceStatistics.contentVersionBytesRead);
     document.getElementById("detailsMetadataVersionFilesRead").textContent = cd.sourceStatistics.metadataVersionFilesRead;
     document.getElementById("detailsMetadataVersionBytesRead").textContent = formatBytes(cd.sourceStatistics.metadataVersionBytesRead);
-    
+
     // Throughput (read)
     var durationInS = cd.durationInNS / (1000 * 1000 * 1000);
     document.getElementById("detailsEntriesScannedPerSecond").textContent = roundToDigits((cd.sourceStatistics.filesScanned +
@@ -361,7 +388,7 @@ function refreshTextElements(cd)
                                                                                          cd.sourceStatistics.metadataBytesRead +
                                                                                          cd.sourceStatistics.contentVersionBytesRead +
                                                                                          cd.sourceStatistics.metadataVersionBytesRead) / durationInS);
-    
+
     // Target (write) statistics
     document.getElementById("detailsSpaceNodesCreated").textContent               = cd.targetStatistics.spaceNodesCreated;
     document.getElementById("detailsSpaceNodesReplaced").textContent              = cd.targetStatistics.spaceNodesReplaced;
@@ -375,7 +402,7 @@ function refreshTextElements(cd)
     document.getElementById("detailsContentVersionsCreated").textContent          = cd.targetStatistics.contentVersionsCreated;
     document.getElementById("detailsContentVersionBytesWritten").textContent      = formatBytes(cd.targetStatistics.contentVersionsBytesWritten);
     document.getElementById("detailsContentVersionPropertiesWritten").textContent = cd.targetStatistics.contentVersionsPropertiesWritten;
-    
+
     // Throughput (write)
     document.getElementById("detailsNodesWrittenPerSecond").textContent = roundToDigits((cd.targetStatistics.spaceNodesCreated +
                                                                                          cd.targetStatistics.spaceNodesReplaced +
@@ -402,7 +429,7 @@ function formatDuration(durationInNs, details)
   var seconds      = Math.floor(durationInNs / (1000 * 1000 * 1000)) % 60;
   var milliseconds = Math.floor(durationInNs / (1000 * 1000)) % 1000;
   var microseconds = Math.floor(durationInNs / (1000)) % 1000;
-  
+
   if (details === true)
   {
     return("" + days + "d " + hours + "h " + minutes + "m " + seconds + "s " + milliseconds + "." + microseconds + "ms");
@@ -421,13 +448,38 @@ function formatBytes(bytes)
   else if (bytes > (1024 * 1024 * 1024))               return("" + roundToDigits(bytes / (1024 * 1024 * 1024), 2) + "GB");
   else if (bytes > (1024 * 1024))                      return("" + roundToDigits(bytes / (1024 * 1024), 2) + "MB");
   else if (bytes > 1024)                               return("" + roundToDigits(bytes / 1024, 2) + "kB");
-  else                                                 return("" + bytes + "B");
+  else                                                 return("" + roundToDigits(bytes, 2) + "B");
 }
 
 
 function roundToDigits(number, numberOfDigits)
 {
   var multiplicationFactor = Math.pow(10, numberOfDigits);
-  
+
   return(Math.round(number * multiplicationFactor) / multiplicationFactor);
 }
+
+
+// Let me count the ways Javascript SUX0RZ!!!!!!!
+function deepCopy(object)
+{
+  var result;
+
+  if (object != null)
+  {
+    result = JSON.parse(JSON.stringify(object));
+  }
+
+  return(result);
+}
+
+
+/*
+ * Toggle visibility of two div elements
+ */
+function toggleDivs(elementToHide, elementToShow)
+{
+  elementToHide.style.display = "none";
+  elementToShow.style.display = "block";
+}
+

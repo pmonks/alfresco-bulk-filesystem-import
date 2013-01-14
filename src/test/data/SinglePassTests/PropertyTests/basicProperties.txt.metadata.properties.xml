@@ -7,5 +7,5 @@
   <entry key="cm:description">Short sentence that uses all 26 letters.</entry>
   <entry key="cm:created">1901-01-01T12:34:56.789+10:00</entry>
   <!-- Note: The following needs to be set to the NodeRef of a tag in your Alfresco installation -->
-  <entry key="cm:taggable">workspace://SpacesStore/5e0e80e2-6022-4cf9-8461-6b6c21e39f49</entry>
+  <entry key="cm:taggable">workspace://SpacesStore/547c5cfb-caf5-4161-9969-011deac1afb1</entry>
 </properties>
