@@ -182,18 +182,18 @@ function startRefreshTextTimer()
 
   Y.use('gallery-timer', function(Y)
   {
-      var refreshText = function()
-        {
-          refreshTextElements(currentData);
-        };
+    var refreshText = function()
+      {
+        refreshTextElements(currentData);
+      };
 
-      refreshTextTimer = new Y.Timer( { length : 5000, repeatCount : 0, callback : refreshText } );
+    refreshTextTimer = new Y.Timer( { length : 5000, repeatCount : 0, callback : refreshText } );
 
-      refreshTextTimer.on('timer:start', function(e) { Y.log('Refresh text timer started', 'debug') });
-      refreshTextTimer.on('timer:stop',  function(e) { Y.log('Refresh text timer stopped', 'debug') });
+    refreshTextTimer.on('timer:start', function(e) { Y.log('Refresh text timer started', 'debug') });
+    refreshTextTimer.on('timer:stop',  function(e) { Y.log('Refresh text timer stopped', 'debug') });
 
-      refreshTextTimer.start();
-    });
+    refreshTextTimer.start();
+  });
 }
 
 
@@ -206,12 +206,12 @@ function startFilesPerSecondChart(canvasElement)
 
   // Initialise the files per second chart
   filesPerSecondChart = new SmoothieChart({
-    grid: { strokeStyle      :'rgb(127, 127, 127)',
-              fillStyle        :'rgb(0, 0, 0)',
-              lineWidth        : 1,
-              millisPerLine    : 500,
-              verticalSections : 10 },
-      labels: { fillStyle :'rgb(255, 255, 255)' }
+    grid: { strokeStyle      : 'rgb(127, 127, 127)',
+            fillStyle        : 'rgb(0, 0, 0)',
+            lineWidth        : 1,
+            millisPerLine    : 500,
+            verticalSections : 10 },
+    labels: { fillStyle :'rgb(255, 255, 255)' }
   });
   filesPerSecondChart.streamTo(canvasElement, 1000);  // 1 second delay in rendering (for extra smoothiness!)
 
@@ -226,12 +226,12 @@ function startFilesPerSecondChart(canvasElement)
   {
     Y.log('Updating files per second chart...', 'debug');
 
-    var now            = new Date().getTime();
-    var pd             = previousData;
-    var cd             = currentData;
-    var filesScanned   = 0;
-    var filesRead      = 0;
-    var nodesCreated   = 0;
+    var now          = new Date().getTime();
+    var pd           = previousData;
+    var cd           = currentData;
+    var filesScanned = 0;
+    var filesRead    = 0;
+    var nodesCreated = 0;
 
     if (cd != null)
     {
@@ -258,10 +258,10 @@ function startFilesPerSecondChart(canvasElement)
   }, 1000);  // Update every second
 
   // Add the time series' to the chart
-  filesPerSecondChart.addTimeSeries(fileScannedTimeSeries,  { strokeStyle:'rgb(255, 0, 0)',   fillStyle:'rgba(255, 0, 0, 0.0)', lineWidth:3 } );
-  filesPerSecondChart.addTimeSeries(filesReadTimeSeries,    { strokeStyle:'rgb(0, 255, 0)',   fillStyle:'rgba(0, 255, 0, 0.0)', lineWidth:3 } );
-  filesPerSecondChart.addTimeSeries(nodesCreatedTimeSeries, { strokeStyle:'rgb(0, 0, 255)',   fillStyle:'rgba(0, 0, 255, 0.0)', lineWidth:3 } );
-  filesPerSecondChart.addTimeSeries(filesZeroTimeSeries,    { strokeStyle:'rgba(0, 0, 0, 0)', fillStyle:'rgba(0, 0, 0, 0.0)',   lineWidth:0 } );
+  filesPerSecondChart.addTimeSeries(fileScannedTimeSeries,  { strokeStyle : 'rgb(255, 0, 0)',   fillStyle : 'rgba(255, 0, 0, 0.0)', lineWidth : 3 } );
+  filesPerSecondChart.addTimeSeries(filesReadTimeSeries,    { strokeStyle : 'rgb(0, 255, 0)',   fillStyle : 'rgba(0, 255, 0, 0.0)', lineWidth : 3 } );
+  filesPerSecondChart.addTimeSeries(nodesCreatedTimeSeries, { strokeStyle : 'rgb(0, 0, 255)',   fillStyle : 'rgba(0, 0, 255, 0.0)', lineWidth : 3 } );
+  filesPerSecondChart.addTimeSeries(filesZeroTimeSeries,    { strokeStyle : 'rgba(0, 0, 0, 0)', fillStyle : 'rgba(0, 0, 0, 0.0)',   lineWidth : 0 } );
 }
 
 
@@ -274,12 +274,12 @@ function startBytesPerSecondChart(canvasElement)
 
   // Initialise the bytes per second chart
   bytesPerSecondChart = new SmoothieChart({
-    grid: { strokeStyle      :'rgb(127, 127, 127)',
-            fillStyle        :'rgb(0, 0, 0)',
+    grid: { strokeStyle      : 'rgb(127, 127, 127)',
+            fillStyle        : 'rgb(0, 0, 0)',
             lineWidth        : 1,
             millisPerLine    : 500,
             verticalSections : 10 },
-    labels: { fillStyle :'rgb(255, 255, 255)' }
+    labels: { fillStyle : 'rgb(255, 255, 255)' }
   });
   bytesPerSecondChart.streamTo(canvasElement, 1000);  // 1 second delay in rendering (for extra smoothiness!)
 
@@ -293,11 +293,11 @@ function startBytesPerSecondChart(canvasElement)
   {
     Y.log('Updating bytes per second chart...', 'debug');
 
-    var now            = new Date().getTime();
-    var pd             = previousData;
-    var cd             = currentData;
-    var bytesRead      = 0;
-    var bytesWritten   = 0;
+    var now          = new Date().getTime();
+    var pd           = previousData;
+    var cd           = currentData;
+    var bytesRead    = 0;
+    var bytesWritten = 0;
 
     if (cd != null)
     {
@@ -321,9 +321,9 @@ function startBytesPerSecondChart(canvasElement)
   }, 1000);  // Update every second
 
   // Add the time series' to the chart
-  bytesPerSecondChart.addTimeSeries(bytesReadTimeSeries,    { strokeStyle:'rgb(0, 255, 0)',   fillStyle:'rgba(0, 255, 0, 0.0)', lineWidth:3 } );
-  bytesPerSecondChart.addTimeSeries(bytesWrittenTimeSeries, { strokeStyle:'rgb(0, 0, 255)',   fillStyle:'rgba(0, 0, 255, 0.0)', lineWidth:3 } );
-  bytesPerSecondChart.addTimeSeries(bytesZeroTimeSeries,    { strokeStyle:'rgba(0, 0, 0, 0)', fillStyle:'rgba(0, 0, 0, 0.0)',   lineWidth:0 } );
+  bytesPerSecondChart.addTimeSeries(bytesReadTimeSeries,    { strokeStyle : 'rgb(0, 255, 0)',   fillStyle : 'rgba(0, 255, 0, 0.0)', lineWidth : 3 } );
+  bytesPerSecondChart.addTimeSeries(bytesWrittenTimeSeries, { strokeStyle : 'rgb(0, 0, 255)',   fillStyle : 'rgba(0, 0, 255, 0.0)', lineWidth : 3 } );
+  bytesPerSecondChart.addTimeSeries(bytesZeroTimeSeries,    { strokeStyle : 'rgba(0, 0, 0, 0)', fillStyle : 'rgba(0, 0, 0, 0.0)',   lineWidth : 0 } );
 }
 
 
