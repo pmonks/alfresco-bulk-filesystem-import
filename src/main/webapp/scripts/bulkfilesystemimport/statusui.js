@@ -351,6 +351,15 @@ function refreshTextElements(cd)
       document.getElementById("detailsActiveThreads").textContent = cd.activeThreads;
     }
 
+    if (cd.totalThreads === undefined)
+    {
+      document.getElementById("detailsTotalThreads").textContent = "0";
+    }
+    else
+    {
+      document.getElementById("detailsTotalThreads").textContent = cd.totalThreads;
+    }
+
     // End date
     if (cd.endDate) document.getElementById("detailsEndDate").textContent = cd.endDate;
 
