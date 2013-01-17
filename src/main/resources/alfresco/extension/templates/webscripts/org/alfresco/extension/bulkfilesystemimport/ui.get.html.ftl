@@ -51,11 +51,13 @@
     </script>
   </head>
   <body class="yui-skin-sam">
-    <p>
-      <img align="left" src="${url.context}/images/logo/AlfrescoLogo32.png" alt="Alfresco" />
-      <strong>Bulk Filesystem Import Tool (Community maintained)</strong><br/>
-      Alfresco ${server.edition} v${server.version}
-    </p>
+    <table cellpadding="5">
+      <tr>
+        <td><img src="${url.context}/images/logo/AlfrescoLogo32.png" alt="Alfresco" /></td>
+        <td><strong>Bulk Filesystem Import Tool v1.2 (Community maintained)</strong><br/>
+            Alfresco ${server.edition} v${server.version}</td>
+      </tr>
+    </table>
     <p>Please see the <a target="_blank" href="http://code.google.com/p/alfresco-bulk-filesystem-import/">project site</a> for documentation, known issues, updated versions, etc.</p>
     <form action="${url.service}/initiate" method="get" enctype="multipart/form-data" charset="utf-8" onsubmit="return validateForm(this);">
       <table>
