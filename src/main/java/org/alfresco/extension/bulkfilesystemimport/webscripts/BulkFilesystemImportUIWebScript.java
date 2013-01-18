@@ -19,11 +19,6 @@
 
 package org.alfresco.extension.bulkfilesystemimport.webscripts;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -33,12 +28,6 @@ import org.springframework.extensions.webscripts.Cache;
 import org.springframework.extensions.webscripts.DeclarativeWebScript;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptRequest;
-import org.springframework.extensions.webscripts.WebScriptException;
-
-import org.alfresco.repo.model.Repository;
-import org.alfresco.service.ServiceRegistry;
-import org.alfresco.service.cmr.model.FileNotFoundException;
-import org.alfresco.service.cmr.repository.NodeRef;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter;
 
