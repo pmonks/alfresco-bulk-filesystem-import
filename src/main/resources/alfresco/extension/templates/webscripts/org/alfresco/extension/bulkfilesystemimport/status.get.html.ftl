@@ -327,22 +327,31 @@
 [/#if]
         </td>
       </tr>
-[#if importStatus.lastExceptionAsString??]
-      <tr>
-        <td colspan="2"><strong>Error Information From Last Run</strong></td>
-      </tr>
-      <tr>
-        <td>File that failed:</td>
-        <td id="detailsFileThatFailed">${importStatus.currentFileBeingProcessed!"n/a"}</td>
-      </tr>
-      <tr>
-        <td>Exception:</td>
-        <td><pre id="detailsLastException">${importStatus.lastExceptionAsString}</pre></td>
-      </tr>
-[#else]
-<!-- TODO: FIX THIS SO THAT THE JS CAN POPULATE THE ELEMENTS! -->
-[/#if]
     </table>
+    <div id="detailsErrorInformation" style="display:none">
+      <p><strong>Error Information From Last Run</strong></p>
+      <table>
+[#if importStatus.lastExceptionAsString??]
+        <tr>
+          <td>File that failed:</td>
+          <td id="detailsFileThatFailed">${importStatus.currentFileBeingProcessed!"n/a"}</td>
+        </tr>
+        <tr>
+          <td>Exception:</td>
+          <td><pre id="detailsLastException">${importStatus.lastExceptionAsString}</pre></td>
+        </tr>
+[#else]
+        <tr>
+          <td>File that failed:</td>
+          <td id="detailsFileThatFailed">n/a</td>
+        </tr>
+        <tr>
+          <td>Exception:</td>
+          <td><pre id="detailsLastException">n/a</pre></td>
+        </tr>
+[/#if]
+      </table>
+    </div>
     </p>
   </blockquote>
 </body>

@@ -422,10 +422,12 @@ function refreshTextElements(cd)
                                                                                        cd.targetStatistics.contentVersionsBytesWritten) / durationInS);
 
     // Exceptions //####TODO: finish this off - note: needs updates to status.get.html.ftl
-/*
-    document.getElementById("detailsFileThatFailed").textContent = ;
-    document.getElementById("detailsLastException").textContent = ;
-*/
+    if (cd.errorInformation)
+    {
+      document.getElementById("detailsErrorInformation").style.display = "block";
+      document.getElementById("detailsFileThatFailed").textContent     = cd.errorInformation.fileThatFailed;
+      document.getElementById("detailsLastException").textContent      = cd.errorInformation.exception;
+    }
   }
 }
 
