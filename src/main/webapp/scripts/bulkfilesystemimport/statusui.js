@@ -421,7 +421,7 @@ function refreshTextElements(cd)
     document.getElementById("detailsDataWrittenPerSecond").textContent  = formatBytes((cd.targetStatistics.contentBytesWritten +
                                                                                        cd.targetStatistics.contentVersionsBytesWritten) / durationInS);
 
-    // Exceptions //####TODO: finish this off
+    // Exceptions //####TODO: finish this off - note: needs updates to status.get.html.ftl
 /*
     document.getElementById("detailsFileThatFailed").textContent = ;
     document.getElementById("detailsLastException").textContent = ;

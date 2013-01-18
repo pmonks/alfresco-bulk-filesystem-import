@@ -10,6 +10,12 @@
 
   <!-- Java-backed Web Scripts for the bulk filesystem importer -->
 
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.ui.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportUIWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-importer" /> 
+  </bean>
+
   <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.initiate.get"
         class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportWebScript"
         parent="webscript">

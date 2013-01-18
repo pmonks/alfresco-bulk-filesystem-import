@@ -242,7 +242,9 @@
           <span id="detailsFilesReadPerSecond">${(totalFilesRead  / (importStatus.durationInNs / (1000 * 1000 * 1000)))}</span> files read / sec<br/>
           <span id="detailsDataReadPerSecond">[@formatBytes (totalDataRead / (importStatus.durationInNs / (1000 * 1000 * 1000))) /]</span> / sec
 [#else]
-          n/a
+          <span id="detailsEntriesScannedPerSecond">n/a</span> entries scanned / sec<br/>
+          <span id="detailsFilesReadPerSecond">n/a</span> files read / sec<br/>
+          <span id="detailsDataReadPerSecond">n/a</span> / sec
 [/#if]
         </td>
       </tr>
@@ -320,7 +322,8 @@
           <span id="detailsNodesWrittenPerSecond">${(totalNodesWritten  / (importStatus.durationInNs / (1000 * 1000 * 1000)))?string("#0")}</span> nodes / sec<br/>
           <span id="detailsDataWrittenPerSecond">[@formatBytes (totalDataWritten / (importStatus.durationInNs / (1000 * 1000 * 1000))) /]</span> / sec
 [#else]
-          n/a
+          <span id="detailsNodesWrittenPerSecond">n/a</span> nodes / sec<br/>
+          <span id="detailsDataWrittenPerSecond">n/a</span> / sec
 [/#if]
         </td>
       </tr>
@@ -336,6 +339,8 @@
         <td>Exception:</td>
         <td><pre id="detailsLastException">${importStatus.lastExceptionAsString}</pre></td>
       </tr>
+[#else]
+<!-- TODO: FIX THIS SO THAT THE JS CAN POPULATE THE ELEMENTS! -->
 [/#if]
     </table>
     </p>
