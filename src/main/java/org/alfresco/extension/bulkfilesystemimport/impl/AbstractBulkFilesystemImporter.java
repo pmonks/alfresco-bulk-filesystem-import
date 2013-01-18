@@ -42,6 +42,7 @@ import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
 import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
+import org.alfresco.repo.tenant.AbstractTenantRoutingContentStore;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
@@ -173,28 +174,60 @@ public abstract class AbstractBulkFilesystemImporter
     }
     
     
+    /**
+     * Determines whether the given file is located in the given file content store.
+     * @param fileContentStore The file content store to check <i>(must not be null)</i>.
+     * @param source           The file to check <i>(must not be null)</i>.
+     * @return True if the given file is in an Alfresco managed content store, false otherwise.
+     */
+    private final boolean isInContentStore(final FileContentStore fileContentStore, final File source)
+    {
+        boolean result            = false;
+        String  storeRootLocation = fileContentStore.getRootLocation();
+        String  sourcePath        = source.getAbsolutePath();   // Note: we don't use getCanonicalPath here because it dereferences symlinks (which we don't want)
+        
+        result = sourcePath.startsWith(storeRootLocation);
+        
+        return(result);
+    }
+
+
+    /**
+     * Determines whether the given file is already located in an Alfresco managed content store.  Used to determine
+     * whether to perform a streaming or in-place import.
+     * 
+     * @param source The file to test.  Typically this would be the source directory for the import <i>(must not be null)</i>.
+     * @return True if the given file is in an Alfresco managed content store, false otherwise.
+     */
     private final boolean isInContentStore(final File source)
     {
         boolean result = false;
-        
-        // Ignore non-file content stores
+
         if (configuredContentStore instanceof FileContentStore)
         {
-            String storeRootLocation = configuredContentStore.getRootLocation();
-            String sourcePath        = null;
-            
-            try
-            {
-                sourcePath = source.getCanonicalPath();
-            }
-            catch (final IOException ioe)
-            {
-                sourcePath = source.getAbsolutePath();
-            }
-            
-            result = sourcePath.startsWith(storeRootLocation);
+            result = isInContentStore((FileContentStore)configuredContentStore, source);
         }
-        
+        // It's a shame org.alfresco.repo.content.AbstractRoutingContentStore.getAllStores() is protected - that limits the applicability of this solution 
+        else if (configuredContentStore instanceof AbstractTenantRoutingContentStore)
+        {
+            List<ContentStore> backingStores = ((AbstractTenantRoutingContentStore)configuredContentStore).getAllStores();
+            
+            if (backingStores != null)
+            {
+                for (ContentStore store : backingStores)
+                {
+                    if (store instanceof FileContentStore)
+                    {
+                        if (isInContentStore((FileContentStore)store, source))
+                        {
+                            result = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         return(result);
     }
 
