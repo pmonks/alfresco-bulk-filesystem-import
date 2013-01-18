@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Peter Monks.
+ * Copyright (C) 2007-2013 Peter Monks.
  *               2010-2011 Ryan McVeigh Fixed issues #18 and #62.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

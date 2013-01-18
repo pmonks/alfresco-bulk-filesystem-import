@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2012 Peter Monks.
+ * Copyright (C) 2007-2013 Peter Monks.
  *               2010      Martin Bergljung Fixed issue #4.
  *               2010      Stefan Topfstedt Fixed issues #20, #24.
  *               2011      Ryan McVeigh     Fixed issues #18, #62.
