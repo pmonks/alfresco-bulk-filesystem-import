@@ -17,10 +17,10 @@
 [/#if]
 [/#compress]",
 [#if importStatus.sourceDirectory??]
-  "sourceDirectory" : "${importStatus.sourceDirectory}",
+  "sourceDirectory" : "${importStatus.sourceDirectory?js_string?replace("\\'", "'")}",
 [/#if]
 [#if importStatus.targetSpace??]
-  "targetSpace" : "${importStatus.targetSpace}",
+  "targetSpace" : "${importStatus.targetSpace?js_string?replace("\\'", "'")}",
 [/#if]
 [#if importStatus.importType??]
   "importType" : "${importStatus.importType}",
@@ -42,7 +42,7 @@
   "completedBatches" : ${importStatus.numberOfBatchesCompleted?c},
   "currentFileOrFolder" : "${importStatus.currentFileBeingProcessed!"n/a"}",
   "sourceStatistics" : {
-    "lastFileOrFolderProcessed" : "${importStatus.currentFileBeingProcessed!"n/a"}",
+    "lastFileOrFolderProcessed" : "${importStatus.currentFileBeingProcessed!"n/a"?js_string?replace("\\'", "'")}",
     "filesScanned" : ${importStatus.numberOfFilesScanned?c},
     "foldersScanned" : ${importStatus.numberOfFoldersScanned?c},
     "unreadableEntries" : ${importStatus.numberOfUnreadableEntries?c},
@@ -73,7 +73,7 @@
   ,
   "errorInformation" : {
     "fileThatFailed" : "${importStatus.currentFileBeingProcessed!"n/a"}",
-    "exception" : "${importStatus.lastExceptionAsString}"
+    "exception" : "${importStatus.lastExceptionAsString?js_string?replace("\\'", "'")}"
   }
 [/#if]
 }

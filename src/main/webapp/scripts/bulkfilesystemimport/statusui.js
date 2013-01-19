@@ -337,9 +337,19 @@ function refreshTextElements(cd)
   if (cd != null)
   {
     // Successful
-    document.getElementById("detailsSuccessful").textContent = cd.resultOfLastExecution;
-    if (cd.resultOfLastExecution === "Succeeded") document.getElementById("detailsSuccessful").style.color = "green";
-    if (cd.resultOfLastExecution === "Failed")    document.getElementById("detailsSuccessful").style.color = "red";
+    if (cd.endDate)
+    {
+      if (cd.resultOfLastExecution === "Succeeded")
+      {
+        document.getElementById("detailsSuccessful").textContent = "Yes";
+        document.getElementById("detailsSuccessful").style.color = "green";
+      }
+      else if (cd.resultOfLastExecution === "Failed")
+      {
+        document.getElementById("detailsSuccessful").textContent = "No";
+        document.getElementById("detailsSuccessful").style.color = "red";
+      }
+    }
 
     // Threads
     if (cd.activeThreads === undefined)
@@ -386,17 +396,26 @@ function refreshTextElements(cd)
     document.getElementById("detailsMetadataVersionBytesRead").textContent = formatBytes(cd.sourceStatistics.metadataVersionBytesRead);
 
     // Throughput (read)
-    var durationInS = cd.durationInNS / (1000 * 1000 * 1000);
-    document.getElementById("detailsEntriesScannedPerSecond").textContent = roundToDigits((cd.sourceStatistics.filesScanned +
-                                                                                           cd.sourceStatistics.foldersScanned) / durationInS, 2);
-    document.getElementById("detailsFilesReadPerSecond").textContent      = roundToDigits((cd.sourceStatistics.contentFilesRead +
-                                                                                           cd.sourceStatistics.metadataFilesRead +
-                                                                                           cd.sourceStatistics.contentVersionFilesRead +
-                                                                                           cd.sourceStatistics.metadataVersionFilesRead) / durationInS, 2);
-    document.getElementById("detailsDataReadPerSecond").textContent       = formatBytes((cd.sourceStatistics.contentBytesRead +
-                                                                                         cd.sourceStatistics.metadataBytesRead +
-                                                                                         cd.sourceStatistics.contentVersionBytesRead +
-                                                                                         cd.sourceStatistics.metadataVersionBytesRead) / durationInS);
+    if (cd.durationInNS)
+    {
+      var durationInS = cd.durationInNS / (1000 * 1000 * 1000);
+      document.getElementById("detailsEntriesScannedPerSecond").textContent = "" +
+                                                                              roundToDigits((cd.sourceStatistics.filesScanned +
+                                                                                             cd.sourceStatistics.foldersScanned) / durationInS, 2) +
+                                                                              " entries scanned / sec";
+      document.getElementById("detailsFilesReadPerSecond").textContent      = "" +
+                                                                              roundToDigits((cd.sourceStatistics.contentFilesRead +
+                                                                                             cd.sourceStatistics.metadataFilesRead +
+                                                                                             cd.sourceStatistics.contentVersionFilesRead +
+                                                                                             cd.sourceStatistics.metadataVersionFilesRead) / durationInS, 2) +
+                                                                              " files read / sec";
+      document.getElementById("detailsDataReadPerSecond").textContent       = "" +
+                                                                              formatBytes((cd.sourceStatistics.contentBytesRead +
+                                                                                           cd.sourceStatistics.metadataBytesRead +
+                                                                                           cd.sourceStatistics.contentVersionBytesRead +
+                                                                                           cd.sourceStatistics.metadataVersionBytesRead) / durationInS) +
+                                                                              " / sec";
+    }
 
     // Target (write) statistics
     document.getElementById("detailsSpaceNodesCreated").textContent               = cd.targetStatistics.spaceNodesCreated;
@@ -413,13 +432,21 @@ function refreshTextElements(cd)
     document.getElementById("detailsContentVersionPropertiesWritten").textContent = cd.targetStatistics.contentVersionsPropertiesWritten;
 
     // Throughput (write)
-    document.getElementById("detailsNodesWrittenPerSecond").textContent = roundToDigits((cd.targetStatistics.spaceNodesCreated +
-                                                                                         cd.targetStatistics.spaceNodesReplaced +
-                                                                                         cd.targetStatistics.contentNodesCreated +
-                                                                                         cd.targetStatistics.contentNodesReplaced +
-                                                                                         cd.targetStatistics.contentVersionsCreated) / durationInS, 2);
-    document.getElementById("detailsDataWrittenPerSecond").textContent  = formatBytes((cd.targetStatistics.contentBytesWritten +
-                                                                                       cd.targetStatistics.contentVersionsBytesWritten) / durationInS);
+    if (cd.durationInNS)
+    {
+      var durationInS = cd.durationInNS / (1000 * 1000 * 1000);
+      document.getElementById("detailsNodesWrittenPerSecond").textContent = "" +
+                                                                            roundToDigits((cd.targetStatistics.spaceNodesCreated +
+                                                                                           cd.targetStatistics.spaceNodesReplaced +
+                                                                                           cd.targetStatistics.contentNodesCreated +
+                                                                                           cd.targetStatistics.contentNodesReplaced +
+                                                                                           cd.targetStatistics.contentVersionsCreated) / durationInS, 2) +
+                                                                            " nodes / sec";
+      document.getElementById("detailsDataWrittenPerSecond").textContent  = "" +
+                                                                            formatBytes((cd.targetStatistics.contentBytesWritten +
+                                                                                         cd.targetStatistics.contentVersionsBytesWritten) / durationInS) +
+                                                                            " / sec";
+    }
 
     // Exceptions //####TODO: finish this off - note: needs updates to status.get.html.ftl
     if (cd.errorInformation)

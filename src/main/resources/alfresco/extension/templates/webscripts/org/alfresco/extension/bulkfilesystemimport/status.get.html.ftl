@@ -175,6 +175,8 @@
         <td id="detailsDuration">
 [#if importStatus.durationInNs??]
           [@formatDuration importStatus.durationInNs /]
+[#else]
+          n/a
 [/#if]
         </td>
       </tr>
@@ -242,9 +244,9 @@
           <span id="detailsFilesReadPerSecond">${(totalFilesRead  / (importStatus.durationInNs / (1000 * 1000 * 1000)))}</span> files read / sec<br/>
           <span id="detailsDataReadPerSecond">[@formatBytes (totalDataRead / (importStatus.durationInNs / (1000 * 1000 * 1000))) /]</span> / sec
 [#else]
-          <span id="detailsEntriesScannedPerSecond">n/a</span> entries scanned / sec<br/>
-          <span id="detailsFilesReadPerSecond">n/a</span> files read / sec<br/>
-          <span id="detailsDataReadPerSecond">n/a</span> / sec
+          <span id="detailsEntriesScannedPerSecond">n/a</span><br/>
+          <span id="detailsFilesReadPerSecond"></span><br/>
+          <span id="detailsDataReadPerSecond"></span>
 [/#if]
         </td>
       </tr>
@@ -322,34 +324,23 @@
           <span id="detailsNodesWrittenPerSecond">${(totalNodesWritten  / (importStatus.durationInNs / (1000 * 1000 * 1000)))?string("#0")}</span> nodes / sec<br/>
           <span id="detailsDataWrittenPerSecond">[@formatBytes (totalDataWritten / (importStatus.durationInNs / (1000 * 1000 * 1000))) /]</span> / sec
 [#else]
-          <span id="detailsNodesWrittenPerSecond">n/a</span> nodes / sec<br/>
-          <span id="detailsDataWrittenPerSecond">n/a</span> / sec
+          <span id="detailsNodesWrittenPerSecond">n/a</span><br/>
+          <span id="detailsDataWrittenPerSecond"></span>
 [/#if]
         </td>
       </tr>
     </table>
     <div id="detailsErrorInformation" style="display:none">
       <p><strong>Error Information From Last Run</strong></p>
-      <table>
-[#if importStatus.lastExceptionAsString??]
+      <table border="1" cellspacing="0" cellpadding="1" width="80%">
         <tr>
           <td>File that failed:</td>
           <td id="detailsFileThatFailed">${importStatus.currentFileBeingProcessed!"n/a"}</td>
         </tr>
         <tr>
-          <td>Exception:</td>
-          <td><pre id="detailsLastException">${importStatus.lastExceptionAsString}</pre></td>
+          <td style="vertical-align:top">Exception:</td>
+          <td><pre id="detailsLastException">${importStatus.lastExceptionAsString!"n/a"}</pre></td>
         </tr>
-[#else]
-        <tr>
-          <td>File that failed:</td>
-          <td id="detailsFileThatFailed">n/a</td>
-        </tr>
-        <tr>
-          <td>Exception:</td>
-          <td><pre id="detailsLastException">n/a</pre></td>
-        </tr>
-[/#if]
       </table>
     </div>
     </p>
