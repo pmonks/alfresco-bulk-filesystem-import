@@ -240,9 +240,9 @@
                            importStatus.numberOfMetadataBytesRead +
                            importStatus.numberOfContentVersionBytesRead +
                            importStatus.numberOfMetadataVersionBytesRead]
-          <span id="detailsEntriesScannedPerSecond">${((importStatus.numberOfFilesScanned + importStatus.numberOfFoldersScanned) / (importStatus.durationInNs / (1000 * 1000 * 1000)))}</span> entries scanned / sec<br/>
-          <span id="detailsFilesReadPerSecond">${(totalFilesRead  / (importStatus.durationInNs / (1000 * 1000 * 1000)))}</span> files read / sec<br/>
-          <span id="detailsDataReadPerSecond">[@formatBytes (totalDataRead / (importStatus.durationInNs / (1000 * 1000 * 1000))) /]</span> / sec
+          <span id="detailsEntriesScannedPerSecond">${((importStatus.numberOfFilesScanned + importStatus.numberOfFoldersScanned) / (importStatus.durationInNs / (1000 * 1000 * 1000)))} entries scanned / sec</span><br/>
+          <span id="detailsFilesReadPerSecond">${(totalFilesRead  / (importStatus.durationInNs / (1000 * 1000 * 1000)))} files read / sec</span><br/>
+          <span id="detailsDataReadPerSecond">[@formatBytes (totalDataRead / (importStatus.durationInNs / (1000 * 1000 * 1000))) /] / sec</span>
 [#else]
           <span id="detailsEntriesScannedPerSecond">n/a</span><br/>
           <span id="detailsFilesReadPerSecond"></span><br/>
@@ -321,8 +321,8 @@
                                importStatus.numberOfContentVersionsCreated]    [#-- We count versions as a node --]
   [#assign totalDataWritten = importStatus.numberOfContentBytesWritten +
                               importStatus.numberOfContentVersionBytesWritten]
-          <span id="detailsNodesWrittenPerSecond">${(totalNodesWritten  / (importStatus.durationInNs / (1000 * 1000 * 1000)))?string("#0")}</span> nodes / sec<br/>
-          <span id="detailsDataWrittenPerSecond">[@formatBytes (totalDataWritten / (importStatus.durationInNs / (1000 * 1000 * 1000))) /]</span> / sec
+          <span id="detailsNodesWrittenPerSecond">${(totalNodesWritten  / (importStatus.durationInNs / (1000 * 1000 * 1000)))?string("#0")} nodes / sec</span><br/>
+          <span id="detailsDataWrittenPerSecond">[@formatBytes (totalDataWritten / (importStatus.durationInNs / (1000 * 1000 * 1000))) /] / sec</span>
 [#else]
           <span id="detailsNodesWrittenPerSecond">n/a</span><br/>
           <span id="detailsDataWrittenPerSecond"></span>
