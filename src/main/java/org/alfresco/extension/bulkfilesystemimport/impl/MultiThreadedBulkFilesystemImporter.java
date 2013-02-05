@@ -20,6 +20,7 @@
 package org.alfresco.extension.bulkfilesystemimport.impl;
 
 import java.io.File;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +29,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
+import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus.ProcessingState;
 import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
@@ -57,6 +59,8 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
     
     private String             sourceRoot;
     private ThreadPoolExecutor threadPool;
+    private Thread             importCompletionThread;
+    
     
     
     public MultiThreadedBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
@@ -80,6 +84,25 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
         
         this.completionCheckIntervalMs = completionCheckIntervalMs;
         this.numberOfActiveUnitsOfWork = new AtomicLong();
+    }
+    
+    
+    /**
+     * @see org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter#stopImport()
+     */
+    @Override
+    public void stopImport()
+    {
+        if (!importStatus.inProgress() || importStatus.getProcessingState().equals(ProcessingState.STOPPING))
+        {
+            throw new IllegalStateException("Import not in progress.");
+        }
+        
+        importStatus.stopping();
+        
+        // Kill the thread pool - the monitoring thread performs the final status update once everything is down
+        if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
+        threadPool.shutdownNow();
     }
     
     
@@ -136,8 +159,7 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
      */
     private void startCompletionMonitoringThread()
     {
-        Runnable importCompletionLogic  = null;
-        Thread   importCompletionThread = null;
+        Runnable importCompletionLogic = null;
         
         importCompletionLogic = new Runnable()
         {
@@ -152,13 +174,25 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     //###TODO: revisit this via thread notification or wotnot
                     Thread.sleep(completionCheckIntervalMs);
                     
+                    // Keep looping (with a delay each time), checking if the import completed
                     while (!Thread.interrupted() && importStatus.inProgress())
                     {
                         if (numberOfActiveUnitsOfWork.get() == 0 && threadPool.getQueue().isEmpty())
                         {
-                            importStatus.stopImport();
+                            if (!importStatus.getProcessingState().equals(ProcessingState.FAILED))
+                            {
+                                if (importStatus.getProcessingState().equals(ProcessingState.STOPPING))
+                                {
+                                    importStatus.importStopped();
+                                    if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' stopped.");
+                                }
+                                else
+                                {
+                                    importStatus.importSucceeded();
+                                    if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' succeeded.");
+                                }
+                            }
                             
-                            if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' succeeded.");
                             logStatus(importStatus);
                             
                             break; // Drop out of the while loop, thereby terminating the thread
@@ -175,9 +209,12 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                 }
                 finally
                 {
-                    // Kill the thread pool before terminating
-                    if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
-                    threadPool.shutdown();
+                    if (!threadPool.isShutdown() && !threadPool.isTerminating())
+                    {
+                        // Kill the thread pool before terminating
+                        if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
+                        threadPool.shutdown();
+                    }
                 }
             }
         };
@@ -250,12 +287,27 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
             }
             catch (final Throwable t)
             {
-                // Log the exception and kill the entire import
-                log.error("Bulk import from '" + getFileName(source) + "' failed.", t);
+                Throwable rootCause = t;
                 
-                if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
-                threadPool.shutdown();
-                importStatus.stopImport(t);
+                while (rootCause.getCause() != null)
+                {
+                    rootCause = rootCause.getCause();
+                }
+                
+                if (importStatus.getProcessingState().equals(ProcessingState.STOPPING) &&
+                    (rootCause instanceof InterruptedException || rootCause instanceof ClosedByInterruptException))
+                {
+                    // We were shutting down and an interrupted exception was thrown - this is normal so we ignore it
+                }
+                else
+                {
+                    // Log the exception and kill the entire import
+                    log.error("Bulk import from '" + getFileName(source) + "' failed.", t);
+                    
+                    if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
+                    threadPool.shutdownNow();
+                    importStatus.importFailed(t);
+                }
             }
             finally
             {

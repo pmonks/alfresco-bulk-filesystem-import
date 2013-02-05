@@ -30,7 +30,8 @@ import java.util.Date;
 public interface BulkImportStatus
 {
     // General information
-    boolean inProgress();
+    boolean         inProgress();
+    ProcessingState getProcessingState();
     
     String     getSourceDirectory();
     String     getTargetSpace();
@@ -94,6 +95,32 @@ public interface BulkImportStatus
         private final String name;
         
         private ImportType(final String name)
+        {
+            this.name = name;
+            
+        }
+        
+        @Override
+        public String toString()
+        {
+            return(name);
+        }
+    };
+    
+    public enum ProcessingState
+    {
+        NEVER_RUN("Never run"),
+        RUNNING("Running"),
+        SUCCESSFUL("Successful"),
+        STOPPING("Stopping"),
+        STOPPED("Stopped"),
+        FAILED("Failed");
+        
+        // The following allows us to create human-readable names for this enum.
+        // Note that it breaks round-tripping (enum -> String -> enum).
+        private final String name;
+        
+        private ProcessingState(final String name)
         {
             this.name = name;
             

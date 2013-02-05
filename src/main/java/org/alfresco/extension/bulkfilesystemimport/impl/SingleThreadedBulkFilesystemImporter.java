@@ -72,7 +72,7 @@ public class SingleThreadedBulkFilesystemImporter
                                      inPlaceImport ? BulkImportStatus.ImportType.IN_PLACE : BulkImportStatus.ImportType.STREAMING,
                                      getBatchWeight());
             bulkImportRecursively(target, getFileName(source), source, replaceExisting, inPlaceImport);
-            importStatus.stopImport();
+            importStatus.importSucceeded();
 
             log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
             logStatus(importStatus);
@@ -81,7 +81,7 @@ public class SingleThreadedBulkFilesystemImporter
         {
             log.error("Bulk import from '" + getFileName(source) + "' failed.", e);
             
-            importStatus.stopImport(e);
+            importStatus.importFailed(e);
             throw e;
         }
     }
@@ -104,13 +104,16 @@ public class SingleThreadedBulkFilesystemImporter
                                                final boolean inPlaceImport)
     {
         List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, inPlaceImport);
-
-        // Recursively import sub directories
-        for (final Pair<NodeRef, File> subDirectory : subDirectories)
+        
+        if (!Thread.interrupted())  // Exit ASAP if the thread has been interrupted
         {
-            if (subDirectory != null)
+            // Recursively import sub directories
+            for (final Pair<NodeRef, File> subDirectory : subDirectories)
             {
-                bulkImportRecursively(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport);
+                if (subDirectory != null)
+                {
+                    bulkImportRecursively(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport);
+                }
             }
         }
     }

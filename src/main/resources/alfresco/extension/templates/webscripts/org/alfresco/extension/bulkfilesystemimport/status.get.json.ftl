@@ -1,21 +1,13 @@
 [#ftl]
 {
-  "currentStatus" : "[#compress]
+  "inProgress" : [#compress]
 [#if importStatus.inProgress()]
-    In progress
+    true
 [#else]
-    Idle
+    false
 [/#if]
-[/#compress]",
-  "resultOfLastExecution" : "[#compress]
-[#if importStatus.inProgress()]
-    n/a
-[#elseif importStatus.lastExceptionAsString??]
-    Failed
-[#else]
-    Succeeded
-[/#if]
-[/#compress]",
+[/#compress],
+  "status" : "${importStatus.processingState}",
 [#if importStatus.sourceDirectory??]
   "sourceDirectory" : "${importStatus.sourceDirectory?js_string?replace("\\'", "'")}",
 [/#if]

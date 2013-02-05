@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
+import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus.ProcessingState;
 import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
@@ -49,6 +50,9 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
     
     private final ThreadFactory threadFactory;
     
+    private Thread backgroundThread = null;
+
+    
     public AsynchronousSingleThreadedBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
                                                             final BehaviourFilter       behaviourFilter,
                                                             final ContentStore          configuredContentStore,
@@ -59,6 +63,22 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
         super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus, dataDictionaryBuilder);
         
         this.threadFactory = threadFactory;
+    }
+    
+    
+    @Override
+    public void stopImport()
+    {
+        if (!importStatus.inProgress() || importStatus.getProcessingState().equals(ProcessingState.STOPPING))
+        {
+            throw new IllegalStateException("Import not in progress.");
+        }
+        
+        if (backgroundThread != null && backgroundThread.isAlive())
+        {
+            importStatus.stopping();
+            backgroundThread.interrupt();
+        }
     }
     
 
@@ -73,7 +93,6 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
         throws Throwable
     {
         Runnable     backgroundLogic  = null;
-        Thread       backgroundThread = null;
         final String currentUser      = AuthenticationUtil.getFullyAuthenticatedUser();
 
         backgroundLogic = new Runnable()
@@ -100,16 +119,25 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
                                                          inPlaceImport ? BulkImportStatus.ImportType.IN_PLACE : BulkImportStatus.ImportType.STREAMING,
                                                          getBatchWeight());
                                 bulkImportRecursively(target, getFileName(source), source, replaceExisting, inPlaceImport);
-                                importStatus.stopImport();
+                                
+                                if (importStatus.getProcessingState().equals(ProcessingState.STOPPING))
+                                {
+                                    importStatus.importStopped();
+                                    log.info("Bulk import from '" + getFileName(source) + "' stopped.");
+                                }
+                                else
+                                {
+                                    importStatus.importSucceeded();
+                                    log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
+                                }
 
-                                log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
                                 logStatus(importStatus);
                             }
                             catch (final Throwable t)
                             {
                                 log.error("Bulk import from '" + getFileName(source) + "' failed.", t);
                                 
-                                importStatus.stopImport(t);
+                                importStatus.importFailed(t);
                                 
                                 // Ugh Java's checked exceptions are the pits!
                                 if (t instanceof Exception)

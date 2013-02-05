@@ -1,22 +1,14 @@
 [#ftl]
 <?xml version='1.0' encoding='UTF-8'?>
 <BulkFilesystemImportStatus>
-  <CurrentStatus>[@compress single_line=true]
+  <InProgress>[#compress]
 [#if importStatus.inProgress()]
-    In progress
+    true
 [#else]
-    Idle
+    false
 [/#if]
-[/@compress]</CurrentStatus>
-  <ResultOfLastExecution>[#compress]
-[#if importStatus.inProgress()]
-    n/a
-[#elseif importStatus.lastExceptionAsString??]
-    Failed
-[#else]
-    Succeeded
-[/#if]
-[/#compress]</ResultOfLastExecution>
+[/#compress]</InProgress>
+  <Status>${importStatus.status}</Status>
 [#if importStatus.sourceDirectory??]
   <SourceDirectory>${importStatus.sourceDirectory}</SourceDirectory>
 [/#if]

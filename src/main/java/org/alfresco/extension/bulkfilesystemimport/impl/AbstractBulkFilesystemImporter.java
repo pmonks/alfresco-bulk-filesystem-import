@@ -175,6 +175,16 @@ public abstract class AbstractBulkFilesystemImporter
     
     
     /**
+     * @see org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter#stopImport()
+     */
+    @Override
+    public void stopImport()
+    {
+        throw new IllegalStateException("Stopping an import is not supported by this implementation.");
+    }
+    
+    
+    /**
      * Determines whether the given file is located in the given file content store.
      * @param fileContentStore The file content store to check <i>(must not be null)</i>.
      * @param source           The file to check <i>(must not be null)</i>.

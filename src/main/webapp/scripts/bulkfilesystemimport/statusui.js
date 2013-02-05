@@ -43,7 +43,7 @@ function onLoad(alfrescoWebScriptContext, filesPerSecondCanvasElement, bytesPerS
 
   getStatusInfo();  // Pull down an initial set of status info
 
-  if (currentData != null && currentData.currentStatus === "Idle")
+  if (currentData != null && currentData.inProgress === false)
   {
     // If the import completed before the page even loaded, update the text area then bomb out
     refreshTextElements(currentDate);
@@ -89,7 +89,7 @@ function getStatusInfo()
       if (currentData != null)
       {
         // If we're idle, stop the world
-        if (currentData.currentStatus === "Idle")
+        if (currentData.inProgress === false)
         {
           Y.log('Import complete, shutting down UI.', 'debug');
 
@@ -105,15 +105,16 @@ function getStatusInfo()
           if (getImportStatusTimer     != null) getImportStatusTimer.stop();
           if (refreshTextTimer         != null) refreshTextTimer.stop();
 
-          // Update the current status
+          // Update the status
           document.getElementById("spinner").style.display               = "none";
-          document.getElementById("currentStatus").textContent           = currentData.currentStatus;
+          document.getElementById("currentStatus").textContent           = "Idle";
           document.getElementById("currentStatus").style.color           = "green";
-          document.getElementById("initiateAnotherImport").style.display = "inline";
+          document.getElementById("stopImportButton").style.display      = "none";
+          document.getElementById("initiateAnotherImport").style.display = "block";
         }
         else  // We're not idle, so update the duration in the current status
         {
-          document.getElementById("currentStatus").textContent = currentData.currentStatus + " " + formatDuration(currentData.durationInNS, false);
+          document.getElementById("currentStatus").textContent = "In progress " + formatDuration(currentData.durationInNS, false);
         }
       }
     };
@@ -336,20 +337,9 @@ function refreshTextElements(cd)
 
   if (cd != null)
   {
-    // Successful
-    if (cd.endDate)
-    {
-      if (cd.resultOfLastExecution === "Succeeded")
-      {
-        document.getElementById("detailsSuccessful").textContent = "Yes";
-        document.getElementById("detailsSuccessful").style.color = "green";
-      }
-      else if (cd.resultOfLastExecution === "Failed")
-      {
-        document.getElementById("detailsSuccessful").textContent = "No";
-        document.getElementById("detailsSuccessful").style.color = "red";
-      }
-    }
+    // Status
+    document.getElementById("detailsStatus").textContent = cd.status;
+    document.getElementById("detailsStatus").style.color = stateToColour(cd.status);
 
     // Threads
     if (cd.activeThreads === undefined)
@@ -448,7 +438,6 @@ function refreshTextElements(cd)
                                                                             " / sec";
     }
 
-    // Exceptions //####TODO: finish this off - note: needs updates to status.get.html.ftl
     if (cd.errorInformation)
     {
       document.getElementById("detailsErrorInformation").style.display = "block";
@@ -456,6 +445,36 @@ function refreshTextElements(cd)
       document.getElementById("detailsLastException").textContent      = cd.errorInformation.exception;
     }
   }
+}
+
+
+function stopImport(stopURI)
+{
+  var stopImportButton = document.getElementById("stopImportButton");
+  
+  stopImportButton.innerHTML = "Stop requested...";
+  stopImportButton.disabled  = true;
+
+  Y.use("io-base", function(Y)
+  {
+    var request = Y.io(stopURI);
+  });
+}
+
+
+function stateToColour(state)
+{
+  var result = "black";
+  
+  if      (state === "Never run")  result = "black";
+  else if (state === "Running")    result = "black";
+  else if (state === "Successful") result = "green";
+  else if (state === "Stopping")   result = "orange";
+  else if (state === "Stopped")    result = "orange";
+  else if (state === "Failed")     result = "red";
+  else                             result = "black";
+
+  return(result);
 }
 
 

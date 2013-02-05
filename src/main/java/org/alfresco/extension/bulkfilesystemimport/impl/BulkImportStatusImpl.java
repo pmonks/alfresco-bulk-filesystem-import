@@ -25,9 +25,11 @@ import java.util.Date;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
 import org.alfresco.extension.bulkfilesystemimport.ImportableItem;
+import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus.ProcessingState;
 
 
 /**
@@ -40,19 +42,20 @@ public class BulkImportStatusImpl
     implements BulkImportStatus
 {
     // General information
-    private AtomicBoolean inProgress                              = new AtomicBoolean();
-    private String        sourceDirectory                         = null;
-    private String        targetSpace                             = null;
-    private ImportType    importType                              = null;
-    private Date          startDate                               = null;
-    private Date          endDate                                 = null;
-    private Long          startNs                                 = null;
-    private Long          endNs                                   = null;
-    private Throwable     lastException                           = null;
-    private String        currentFileBeingProcessed               = null;
-    private AtomicLong    batchWeight                             = new AtomicLong();
-    private ThreadPoolExecutor threadPool                         = null;
-    private AtomicLong    numberOfBatchesCompleted                = new AtomicLong();
+    private AtomicBoolean      inProgress                = new AtomicBoolean(false);
+    private ProcessingState    processingState           = ProcessingState.NEVER_RUN;
+    private String             sourceDirectory           = null;
+    private String             targetSpace               = null;
+    private ImportType         importType                = null;
+    private Date               startDate                 = null;
+    private Date               endDate                   = null;
+    private Long               startNs                   = null;
+    private Long               endNs                     = null;
+    private Throwable          lastException             = null;
+    private String             currentFileBeingProcessed = null;
+    private AtomicLong         batchWeight               = new AtomicLong();
+    private ThreadPoolExecutor threadPool                = null;
+    private AtomicLong         numberOfBatchesCompleted  = new AtomicLong();
     
     // Read-side information
     private AtomicLong    numberOfFoldersScanned                  = new AtomicLong();
@@ -87,18 +90,15 @@ public class BulkImportStatusImpl
     private AtomicLong    numberOfContentVersionBytesWritten      = new AtomicLong();
     private AtomicLong    numberOfContentVersionPropertiesWritten = new AtomicLong();
 
-    
-    public BulkImportStatusImpl()
-    {
-        inProgress.set(false);
-    }
-    
+
     // General information
-    @Override public String     getSourceDirectory() { return(sourceDirectory); }
-    @Override public String     getTargetSpace()     { return(targetSpace); }
-    @Override public ImportType getImportType()      { return(importType); }
-    @Override public Date       getStartDate()       { return(copyDate(startDate)); }
-    @Override public Date       getEndDate()         { return(copyDate(endDate)); }
+    @Override public boolean         inProgress()         { return(inProgress.get()); }
+    @Override public ProcessingState getProcessingState() { return(processingState); }
+    @Override public String          getSourceDirectory() { return(sourceDirectory); }
+    @Override public String          getTargetSpace()     { return(targetSpace); }
+    @Override public ImportType      getImportType()      { return(importType); }
+    @Override public Date            getStartDate()       { return(copyDate(startDate)); }
+    @Override public Date            getEndDate()         { return(copyDate(endDate)); }
     
     @Override
     public Long getDurationInNs()
@@ -143,7 +143,6 @@ public class BulkImportStatusImpl
         return(result);
     }
     
-    @Override public boolean inProgress()               { return(inProgress.get()); }
     @Override public long    getBatchWeight()           { return(batchWeight.get()); }
     @Override public int     getNumberOfActiveThreads() { return(threadPool == null ? 1 : threadPool.getActiveCount()); }
     @Override public int     getTotalNumberOfThreads()  { return(threadPool == null ? 1 : threadPool.getPoolSize()); }
@@ -168,6 +167,7 @@ public class BulkImportStatusImpl
         }
         
         // General information
+        this.processingState           = ProcessingState.RUNNING;
         this.sourceDirectory           = sourceDirectory;
         this.targetSpace               = targetSpace;
         this.importType                = importType;
@@ -216,21 +216,40 @@ public class BulkImportStatusImpl
         this.endNs   = null;
     }
     
-    public void stopImport()
+    public void stopping()
+    {
+        processingState = ProcessingState.STOPPING;
+    }
+    
+    public void importSucceeded()
     {
         if (!inProgress.compareAndSet(true, false))
         {
             throw new RuntimeException("Import not in progress.");
         }
         
-        endNs   = System.nanoTime();
-        endDate = new Date();
+        endNs            = System.nanoTime();
+        endDate          = new Date();
+        processingState  = ProcessingState.SUCCESSFUL;
     }
     
-    public void stopImport(final Throwable lastException)
+    public void importStopped()
     {
-        stopImport();
-        this.lastException = lastException;
+        if (!inProgress.compareAndSet(true, false))
+        {
+            throw new RuntimeException("Import not in progress.");
+        }
+        
+        endNs            = System.nanoTime();
+        endDate          = new Date();
+        processingState  = ProcessingState.STOPPED;
+    }
+    
+    public void importFailed(final Throwable lastException)
+    {
+        importSucceeded();
+        this.lastException   = lastException;
+        this.processingState = ProcessingState.FAILED;
     }
     
     

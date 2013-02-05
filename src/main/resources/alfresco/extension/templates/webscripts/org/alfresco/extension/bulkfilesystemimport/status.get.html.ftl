@@ -21,6 +21,18 @@
     [/#if]
   [/@compress]
 [/#macro]
+[#macro stateToHtmlColour state]
+  [@compress single_line=true]
+    [#if     state="Never run"]  black
+    [#elseif state="Running"]    black
+    [#elseif state="Successful"] green
+    [#elseif state="Stopping"]   orange
+    [#elseif state="Stopped"]    orange
+    [#elseif state="Failed"]     red
+    [#else]                      black
+    [/#if]
+  [/@compress]
+[/#macro]
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -44,10 +56,12 @@
 [#if importStatus.inProgress()]
       <div id="currentStatus" style="display:inline-block;height:50px;color:red;font-weight:bold;font-size:16pt">In progress <span id="inProgressDuration"></span></div> <div id="spinner" style="display:inline-block;vertical-align:middle;width:50px;height:50px;margin:0px 20px 0px 20px"></div>
       <br/>
+      <button id="stopImportButton" type="button" onclick="stopImport('${url.serviceContext}/bulk/import/filesystem/stop.json');">Stop import</button>
       <a id="initiateAnotherImport" style="display:none" href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
 [#else]
       <div id="currentStatus" style="display:inline-block;height:50px;color:green;font-weight:bold;font-size:16pt">Idle</div> <div id="spinner" style="display:inline-block;vertical-align:middle;width:50px;height:50px;margin:0px 20px 0px 20px"></div>
       <br/>
+      <button id="stopImportButton" style="display:none" type="button" onclick="stopImport('${url.serviceContext}/bulk/import/filesystem/stop');">Stop import</button>
       <a id="initiateAnotherImport" href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
 [/#if]
     </p>
@@ -103,14 +117,8 @@
         <td colspan="2"><strong>General Statistics</strong></td>
       </tr>
       <tr>
-        <td width="25%">Successful:</td>
-[#if importStatus.inProgress() || !importStatus.endDate??]
-        <td width="75%" id="detailsSuccessful">n/a</td>
-[#elseif importStatus.lastExceptionAsString??]
-        <td width="75%" id="detailsSuccessful" style="color:red">No</td>
-[#else]
-        <td width="75%" id="detailsSuccessful" style="color:green">Yes</td>
-[/#if]
+        <td width="25%">Status:</td>
+        <td width="75%" id="detailsStatus" style="color:[@stateToHtmlColour importStatus.processingState/]">${importStatus.processingState}</td>
       </tr>
       <tr>
         <td>Source Directory:</td>

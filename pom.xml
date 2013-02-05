@@ -43,7 +43,7 @@
 
   <properties>
     <version.java>1.6</version.java>
-    <version.alfresco>4.1.1</version.alfresco>
+    <version.alfresco>4.1.2</version.alfresco>
     <version.webscripts>1.2.0-M3</version.webscripts>
     <version.junit>4.10</version.junit>
     <version.compiler-plugin>3.0</version.compiler-plugin>

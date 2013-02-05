@@ -41,6 +41,12 @@ public interface BulkFilesystemImporter
     void bulkImport(NodeRef target, File source, boolean replaceExisting) throws Throwable;
     
     /**
+     * Stops an import, if one is in progress (which can be determined by calling getStatus().inProgress().
+     * Note that this is done asynchronously - it may take a little while for in-progress transactions to complete.
+     */
+    void stopImport();
+    
+    /**
      * @return A status object that describes the current state of the bulk filesystem importer.
      */
     BulkImportStatus getStatus();

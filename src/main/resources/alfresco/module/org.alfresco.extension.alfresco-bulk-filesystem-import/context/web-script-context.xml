@@ -27,7 +27,13 @@
   <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.status.get"
         class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportStatusWebScript"
         parent="webscript">
-    <constructor-arg index="0" ref="bfsit-importer" /> 
+    <constructor-arg index="0" ref="bfsit-importer" />
+  </bean>
+  
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.stop.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportStopWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-importer" />
   </bean>
   
   <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.datadictionary.get"
