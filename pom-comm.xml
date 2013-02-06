@@ -11,7 +11,7 @@
 <!--
   <packaging>jar</packaging>
 -->
-  <name>Alfresco Bulk Filesystem Import (Community)</name>
+  <name>Alfresco Bulk Filesystem Import</name>
   <version>1.2-SNAPSHOT</version>
 
   <licenses>
@@ -42,14 +42,18 @@
   </issueManagement>
 
   <properties>
-    <version.alfresco>4.0.d</version.alfresco>
-    <version.webscripts>1.0.0</version.webscripts>
+    <version.java>1.6</version.java>
+    <version.alfresco>4.2.c</version.alfresco>
+    <version.webscripts>1.2.0-M3</version.webscripts>
     <version.junit>4.10</version.junit>
+    <version.compiler-plugin>3.0</version.compiler-plugin>
     <version.amp-plugin>3.0.4</version.amp-plugin>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
   <dependencies>
-    <!-- Alfresco Enterprise -->
+    <!-- Alfresco Community -->
     <dependency>
       <groupId>org.alfresco</groupId>
       <artifactId>alfresco-core</artifactId>
@@ -91,11 +95,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.5.1</version>
+        <version>${version.compiler-plugin}</version>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-          <encoding>UTF-8</encoding>
+          <source>${version.java}</source>
+          <target>${version.java}</target>
+          <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
       </plugin>
       <plugin>
