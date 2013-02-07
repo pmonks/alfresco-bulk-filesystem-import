@@ -43,7 +43,6 @@
 
   <properties>
     <version.java>1.6</version.java>
-    <version.alfresco>4.1.2</version.alfresco>
     <version.webscripts>1.2.0-M3</version.webscripts>
     <version.junit>4.10</version.junit>
     <version.compiler-plugin>3.0</version.compiler-plugin>
@@ -52,22 +51,42 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
+  <profiles>
+    <profile>
+      <id>enterprise</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <version.alfresco>4.1.2</version.alfresco>
+        <suffix.groupId>.enterprise</suffix.groupId>
+      </properties>
+    </profile>
+    <profile>
+      <id>community</id>
+      <properties>
+        <version.alfresco>4.2.c</version.alfresco>
+        <suffix.groupId></suffix.groupId>    <!-- Community artifacts don't have a suffix -->
+      </properties>
+    </profile>
+  </profiles>
+
   <dependencies>
-    <!-- Alfresco Enterprise -->
+    <!-- Alfresco dependencies -->
     <dependency>
-      <groupId>org.alfresco.enterprise</groupId>
+      <groupId>org.alfresco${suffix.groupId}</groupId>
       <artifactId>alfresco-core</artifactId>
       <version>${version.alfresco}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.alfresco.enterprise</groupId>
+      <groupId>org.alfresco${suffix.groupId}</groupId>
       <artifactId>alfresco-data-model</artifactId>
       <version>${version.alfresco}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.alfresco.enterprise</groupId>
+      <groupId>org.alfresco${suffix.groupId}</groupId>
       <artifactId>alfresco-repository</artifactId>
       <version>${version.alfresco}</version>
       <scope>provided</scope>
