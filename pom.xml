@@ -4,15 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.alfresco.extension</groupId>
-  <artifactId>alfresco-bulk-filesystem-import-3x</artifactId>
+  <artifactId>alfresco-bulk-filesystem-import-33</artifactId>
   <packaging>amp</packaging>
   <!-- Comment the previous line and uncomment the following line if you wish to generate an Eclipse project.
        The Maven Eclipse plugin does the wrong thing if packaging != jar. -->
 <!--
   <packaging>jar</packaging>
 -->
-  <name>Alfresco Bulk Filesystem Import (for Alfresco v3.3+)</name>
-  <version>1.2-SNAPSHOT</version>
+  <name>Alfresco Bulk Filesystem Import (for Alfresco v3.3 and v3.4)</name>
+  <version>1.2</version>
 
   <licenses>
     <license>
