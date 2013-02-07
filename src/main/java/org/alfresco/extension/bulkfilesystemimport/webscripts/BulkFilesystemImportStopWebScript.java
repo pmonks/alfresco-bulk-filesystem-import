@@ -31,51 +31,60 @@ import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter;
+import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus.ProcessingState;
 
 
 /**
- * Web Script class that provides status information on the bulk filesystem import process.
+ * Web Script class that stops a bulk import, if one is in progress.
  *
  * @author Peter Monks (peter.monks@alfresco.com)
  */
-public class BulkFilesystemImportStatusWebScript
+public class BulkFilesystemImportStopWebScript
     extends DeclarativeWebScript
 {
-    private final static Log log = LogFactory.getLog(BulkFilesystemImportStatusWebScript.class);
+    private final static Log log = LogFactory.getLog(BulkFilesystemImportStopWebScript.class);
     
-    
-    // Output parameters (for Freemarker)
-    private final static String RESULT_IMPORT_STATUS = "importStatus";
-    
-    // Attributes
     private final BulkFilesystemImporter importer;
     
     
-    public BulkFilesystemImportStatusWebScript(final BulkFilesystemImporter importer)
+    public BulkFilesystemImportStopWebScript(final BulkFilesystemImporter importer)
     {
         // PRECONDITIONS
         assert importer != null : "importer must not be null.";
         
         //BODY
         this.importer = importer;
-    }
-    
+    }    
 
+    
     /**
-     * @see org.alfresco.web.scripts.DeclarativeWebScript#executeImpl(org.alfresco.web.scripts.WebScriptRequest, org.alfresco.web.scripts.Status, org.alfresco.web.scripts.Cache)
+     * @see org.springframework.extensions.webscripts.DeclarativeWebScript#executeImpl(org.springframework.extensions.webscripts.WebScriptRequest, org.springframework.extensions.webscripts.Status, org.springframework.extensions.webscripts.Cache)
      */
     @Override
-    protected Map<String, Object> executeImpl(final WebScriptRequest request,
-                                              final Status           status,
-                                              final Cache            cache)
+    protected Map<String, Object> executeImpl(final WebScriptRequest request, final Status status, final Cache cache)
     {
         Map<String, Object> result = new HashMap<String, Object>();
-        
+
         cache.setNeverCache(true);
         
-        result.put(RESULT_IMPORT_STATUS, importer.getStatus());
+        if (importer.getStatus().inProgress() &&
+            !importer.getStatus().getProcessingState().equals(ProcessingState.STOPPING))
+        {
+            importer.stopImport();
+            result.put("message", "Stop requested.");
+        }
+        else
+        {
+            if (importer.getStatus().getProcessingState().equals(ProcessingState.STOPPING))
+            {
+                result.put("message", "A stop has already been requested.");
+            }
+            else
+            {
+                result.put("message", "No imports are in progress.");
+            }
+        }
         
         return(result);
     }
-    
 }

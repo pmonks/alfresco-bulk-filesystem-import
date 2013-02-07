@@ -21,49 +21,104 @@
     [/#if]
   [/@compress]
 [/#macro]
-[#assign refreshIntervalInSeconds = 5]
+[#macro stateToHtmlColour state]
+  [@compress single_line=true]
+    [#if     state="Never run"]  black
+    [#elseif state="Running"]    black
+    [#elseif state="Successful"] green
+    [#elseif state="Stopping"]   orange
+    [#elseif state="Stopped"]    orange
+    [#elseif state="Failed"]     red
+    [#else]                      black
+    [/#if]
+  [/@compress]
+[/#macro]
 <!DOCTYPE HTML>
 <html>
 <head>
   <title>Bulk Filesystem Import Status</title>
-  <link rel="stylesheet" href="/alfresco/css/main.css" type="text/css"/>
-[#if importStatus.inProgress()]
-  <meta http-equiv="refresh" content="${refreshIntervalInSeconds}" />
-[/#if]
+  <link rel="stylesheet" href="${url.context}/css/main.css" type="text/css"/>
+  <script src="http://yui.yahooapis.com/3.8.0/build/simpleyui/simpleyui-min.js"></script>
+  <script src="${url.context}/scripts/bulkfilesystemimport/smoothie.js"></script>
+  <script src="${url.context}/scripts/bulkfilesystemimport/spin.min.js"></script>
+  <script src="${url.context}/scripts/bulkfilesystemimport/statusui.js"></script>
 </head>
-<body>
+<body onload="onLoad('${url.serviceContext}', document.getElementById('filesPerSecondChart'), document.getElementById('bytesPerSecondChart'));">
   <table>
     <tr>
       <td><img src="${url.context}/images/logo/AlfrescoLogo32.png" alt="Alfresco" /></td>
-      <td><nobr>Bulk Filesystem Import Tool Status</nobr></td>
+      <td><nobr><strong>Bulk Filesystem Import Tool v1.2 (Community maintained)</strong></nobr></td>
     </tr>
     <tr><td><td>Alfresco ${server.edition} v${server.version}
   </table>
   <blockquote>
+    <p>
+[#if importStatus.inProgress()]
+      <div id="currentStatus" style="display:inline-block;height:50px;color:red;font-weight:bold;font-size:16pt">In progress <span id="inProgressDuration"></span></div> <div id="spinner" style="display:inline-block;vertical-align:middle;width:50px;height:50px;margin:0px 20px 0px 20px"></div>
+      <br/>
+      <button id="stopImportButton" type="button" onclick="stopImport('${url.serviceContext}/bulk/import/filesystem/stop.json');">Stop import</button>
+      <a id="initiateAnotherImport" style="display:none" href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
+[#else]
+      <div id="currentStatus" style="display:inline-block;height:50px;color:green;font-weight:bold;font-size:16pt">Idle</div> <div id="spinner" style="display:inline-block;vertical-align:middle;width:50px;height:50px;margin:0px 20px 0px 20px"></div>
+      <br/>
+      <button id="stopImportButton" style="display:none" type="button" onclick="stopImport('${url.serviceContext}/bulk/import/filesystem/stop');">Stop import</button>
+      <a id="initiateAnotherImport" href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
+[/#if]
+    </p>
+    <p>
+      <div id="graphsHidden" style="display:none"><a onClick="toggleDivs(document.getElementById('graphsHidden'), document.getElementById('graphsShown'));"><img style="vertical-align:middle" src="${url.context}/images/icons/arrow_closed.gif"/><span style="vertical-align:middle">Graphs</span></a></div>
+    </p>
+    <div id="graphsShown" style="display:block"><a onClick="toggleDivs(document.getElementById('graphsShown'), document.getElementById('graphsHidden'));"><img style="vertical-align:middle" src="${url.context}/images/icons/arrow_open.gif"/><span style="vertical-align:middle">Graphs</span></a>
+    <p>
+      <strong>Files Per Second</strong>
+    </p>
+    <p>
+      <table border="0" cellspacing="10" cellpadding="0">
+        <tr>
+          <td align="left" valign="top" width="75%">
+            <canvas id="filesPerSecondChart" width="1000" height="200"></canvas>
+          </td>
+          <td align="left" valign="top" width="25%">
+            <span style="color:red;font-weight:bold">Red = files scanned</span><br/>
+            <span style="color:green;font-weight:bold">Green = files read</span><br/>
+            <span style="color:blue;font-weight:bold">Blue = nodes created</span><br/>
+          </td>
+        </tr>
+      </table>
+    </p>
+    <p>
+      <strong>Bytes Per Second</strong>
+    </p>
+    <p>
+      <table border="0" cellspacing="10" cellpadding="0">
+        <tr>
+          <td align="left" valign="top" width="75%">
+            <canvas id="bytesPerSecondChart" width="1000" height="200"></canvas>
+          </td>
+          <td align="left" valign="top" width="25%">
+            <span style="color:green;font-weight:bold">Green = bytes read</span><br/>
+            <span style="color:blue;font-weight:bold">Blue = bytes written</span><br/>
+            <span id="testMessage"></span><br/>
+          </td>
+        </tr>
+      </table>
+    </p>
+    </div>
+    <p>
+      <div id="detailsHidden" style="display:block"><a onClick="toggleDivs(document.getElementById('detailsHidden'), document.getElementById('detailsShown'));"><img style="vertical-align:middle" src="${url.context}/images/icons/arrow_closed.gif"/><span style="vertical-align:middle">Details</span></a></div>
+    </p>
+    <div id="detailsShown" style="display:none"><a onClick="toggleDivs(document.getElementById('detailsShown'), document.getElementById('detailsHidden'));"><img style="vertical-align:middle" src="${url.context}/images/icons/arrow_open.gif"/><span style="vertical-align:middle">Details</span></a>
+    <p>
+    Refreshes every 5 seconds.
+    </p>
     <p>
     <table border="1" cellspacing="0" cellpadding="1" width="80%">
       <tr>
         <td colspan="2"><strong>General Statistics</strong></td>
       </tr>
       <tr>
-        <td width="25%">Current status:</td>
-        <td width="75%">
-[#if importStatus.inProgress()]
-          <span style="color:red">In progress</span>
-[#else]
-          <span style="color:green">Idle</span>
-[/#if]
-        </td>
-      </tr>
-      <tr>
-        <td>Successful:</td>
-[#if importStatus.inProgress() || !importStatus.endDate??]
-        <td>n/a</td>
-[#elseif importStatus.lastExceptionAsString??]
-        <td style="color:red">No</td>
-[#else]
-        <td style="color:green">Yes</td>
-[/#if]
+        <td width="25%">Status:</td>
+        <td width="75%" id="detailsStatus" style="color:[@stateToHtmlColour importStatus.processingState/]">${importStatus.processingState}</td>
       </tr>
       <tr>
         <td>Source Directory:</td>
@@ -99,17 +154,15 @@
         <td>Batch Weight:</td>
         <td>${importStatus.batchWeight}</td>
       </tr>
-[#if importStatus.inProgress()]
       <tr>
         <td>Active Threads:</td>
-        <td>${importStatus.numberOfActiveThreads} (of ${importStatus.totalNumberOfThreads} total)</td>
+        <td><span id="detailsActiveThreads">${importStatus.numberOfActiveThreads}</span> (of <span id="detailsTotalThreads">${importStatus.totalNumberOfThreads}</span> total)</td>
       </tr>
-[/#if]
       <tr>
         <td>Start Date:</td>
         <td>
 [#if importStatus.startDate??]
-          ${importStatus.startDate?datetime?string("yyyy-MM-dd hh:mm:ss.SSSaa")}
+          ${importStatus.startDate?datetime?iso_utc}
 [#else]
           n/a
 [/#if]
@@ -117,25 +170,19 @@
       </tr>
       <tr>
         <td>End Date:</td>
-        <td>
+        <td id="detailsEndDate">
 [#if importStatus.endDate??]
-          ${importStatus.endDate?datetime?string("yyyy-MM-dd hh:mm:ss.SSSaa")}</td>
+          ${importStatus.endDate?datetime?iso_utc}</td>
 [#else]
           n/a
 [/#if]
         </td>
       </tr>
       <tr>
-        <td>
-[#if importStatus.inProgress()]
-          Elapsed Time:
-[#else]
-          Duration:
-[/#if]
-        </td>
-        <td>
+        <td>Duration:</td>
+        <td id="detailsDuration">
 [#if importStatus.durationInNs??]
-          [@formatDuration durationInNs = importStatus.durationInNs/]
+          [@formatDuration importStatus.durationInNs /]
 [#else]
           n/a
 [/#if]
@@ -143,14 +190,14 @@
       </tr>
       <tr>
         <td>Number of Completed Batches:</td>
-        <td>${importStatus.numberOfBatchesCompleted}</td>
+        <td id="detailsCompletedBatches">${importStatus.numberOfBatchesCompleted}</td>
       </tr>
       <tr>
         <td colspan="2"><strong>Source (read) Statistics</strong></td>
       </tr>
       <tr>
-        <td>Last folder or file processed:</td>
-        <td>${importStatus.currentFileBeingProcessed!"n/a"}</td>
+        <td>Last file or folder processed:</td>
+        <td id="detailsCurrentFileOrFolder">${importStatus.currentFileBeingProcessed!"n/a"}</td>
       </tr>
       <tr>
         <td>Scanned:</td>
@@ -162,9 +209,9 @@
               <td>Unreadable</td>
             </tr>
             <tr>
-              <td>${importStatus.numberOfFoldersScanned}</td>
-              <td>${importStatus.numberOfFilesScanned}</td>
-              <td>${importStatus.numberOfUnreadableEntries}</td>
+              <td id="detailsFoldersScanned">${importStatus.numberOfFoldersScanned}</td>
+              <td id="detailsFilesScanned">${importStatus.numberOfFilesScanned}</td>
+              <td id="detailsUnreadableEntries">${importStatus.numberOfUnreadableEntries}</td>
             </tr>
           </table>
         </td>
@@ -180,10 +227,10 @@
               <td>Metadata Versions</td>
             </tr>
             <tr>
-              <td>${importStatus.numberOfContentFilesRead} ([@formatBytes importStatus.numberOfContentBytesRead/])</td>
-              <td>${importStatus.numberOfMetadataFilesRead} ([@formatBytes importStatus.numberOfMetadataBytesRead/])</td>
-              <td>${importStatus.numberOfContentVersionFilesRead} ([@formatBytes importStatus.numberOfContentVersionBytesRead/])</td>
-              <td>${importStatus.numberOfMetadataVersionFilesRead} ([@formatBytes importStatus.numberOfMetadataVersionBytesRead/])</td>
+              <td><span id="detailsContentFilesRead">${importStatus.numberOfContentFilesRead}</span> (<span id="detailsContentBytesRead">[@formatBytes importStatus.numberOfContentBytesRead/]</span>)</td>
+              <td><span id="detailsMetadataFilesRead">${importStatus.numberOfMetadataFilesRead}</span> (<span id="detailsMetadataBytesRead">[@formatBytes importStatus.numberOfMetadataBytesRead/](/span>)</td>
+              <td><span id="detailsContentVersionFilesRead">${importStatus.numberOfContentVersionFilesRead}</span> (<span id="detailsContentVersionBytesRead">[@formatBytes importStatus.numberOfContentVersionBytesRead/]</span>)</td>
+              <td><span id="detailsMetadataVersionFilesRead">${importStatus.numberOfMetadataVersionFilesRead}</span> (<span id="detailsMetadataVersionBytesRead">[@formatBytes importStatus.numberOfMetadataVersionBytesRead/]</span>)</td>
             </tr>
             </tr>
           </table>
@@ -201,11 +248,13 @@
                            importStatus.numberOfMetadataBytesRead +
                            importStatus.numberOfContentVersionBytesRead +
                            importStatus.numberOfMetadataVersionBytesRead]
-          ${((importStatus.numberOfFilesScanned + importStatus.numberOfFoldersScanned) / (importStatus.durationInNs / (1000 * 1000 * 1000)))} entries scanned / sec<br/>
-          ${(totalFilesRead  / (importStatus.durationInNs / (1000 * 1000 * 1000)))} files read / sec<br/>
-          [@formatBytes (totalDataRead / (importStatus.durationInNs / (1000 * 1000 * 1000))) /] / sec
+          <span id="detailsEntriesScannedPerSecond">${((importStatus.numberOfFilesScanned + importStatus.numberOfFoldersScanned) / (importStatus.durationInNs / (1000 * 1000 * 1000)))} entries scanned / sec</span><br/>
+          <span id="detailsFilesReadPerSecond">${(totalFilesRead  / (importStatus.durationInNs / (1000 * 1000 * 1000)))} files read / sec</span><br/>
+          <span id="detailsDataReadPerSecond">[@formatBytes (totalDataRead / (importStatus.durationInNs / (1000 * 1000 * 1000))) /] / sec</span>
 [#else]
-          n/a
+          <span id="detailsEntriesScannedPerSecond">n/a</span><br/>
+          <span id="detailsFilesReadPerSecond"></span><br/>
+          <span id="detailsDataReadPerSecond"></span>
 [/#if]
         </td>
       </tr>
@@ -223,10 +272,10 @@
               <td># Properties</td>
             </tr>
             <tr>
-              <td>${importStatus.numberOfSpaceNodesCreated}</td>
-              <td>${importStatus.numberOfSpaceNodesReplaced}</td>
-              <td>${importStatus.numberOfSpaceNodesSkipped}</td>
-              <td>${importStatus.numberOfSpacePropertiesWritten}</td>
+              <td id="detailsSpaceNodesCreated">${importStatus.numberOfSpaceNodesCreated}</td>
+              <td id="detailsSpaceNodesReplaced">${importStatus.numberOfSpaceNodesReplaced}</td>
+              <td id="detailsSpaceNodesSkipped">${importStatus.numberOfSpaceNodesSkipped}</td>
+              <td id="detailsSpacePropertiesWritten">${importStatus.numberOfSpacePropertiesWritten}</td>
             </tr>
           </table>
         </td>
@@ -243,11 +292,11 @@
               <td># Properties</td>
             </tr>
             <tr>
-              <td>${importStatus.numberOfContentNodesCreated}</td>
-              <td>${importStatus.numberOfContentNodesReplaced}</td>
-              <td>${importStatus.numberOfContentNodesSkipped}</td>
-              <td>[@formatBytes importStatus.numberOfContentBytesWritten/]</td>
-              <td>${importStatus.numberOfContentPropertiesWritten}</td>
+              <td id="detailsContentNodesCreated">${importStatus.numberOfContentNodesCreated}</td>
+              <td id="detailsContentNodesReplaced">${importStatus.numberOfContentNodesReplaced}</td>
+              <td id="detailsContentNodesSkipped">${importStatus.numberOfContentNodesSkipped}</td>
+              <td id="detailsContentBytesWritten">[@formatBytes importStatus.numberOfContentBytesWritten/]</td>
+              <td id="detailsContentPropertiesWritten">${importStatus.numberOfContentPropertiesWritten}</td>
             </tr>
           </table>
         </td>
@@ -262,15 +311,15 @@
               <td># Properties</td>
             </tr>
             </tr>
-              <td>${importStatus.numberOfContentVersionsCreated}</td>
-              <td>[@formatBytes importStatus.numberOfContentVersionBytesWritten/]</td>
-              <td>${importStatus.numberOfContentVersionPropertiesWritten}</td>
+              <td id="detailsContentVersionsCreated">${importStatus.numberOfContentVersionsCreated}</td>
+              <td id="detailsContentVersionBytesWritten">[@formatBytes importStatus.numberOfContentVersionBytesWritten/]</td>
+              <td id="detailsContentVersionPropertiesWritten">${importStatus.numberOfContentVersionPropertiesWritten}</td>
             </tr>
           </table>
         </td>
       <tr>
       <tr>
-        <td>Throughput (write):</td>
+        <td>Throughput:</td>
         <td>
 [#if importStatus.durationInNs?? && importStatus.durationInNs > 0]
   [#assign totalNodesWritten = importStatus.numberOfSpaceNodesCreated +
@@ -280,48 +329,29 @@
                                importStatus.numberOfContentVersionsCreated]    [#-- We count versions as a node --]
   [#assign totalDataWritten = importStatus.numberOfContentBytesWritten +
                               importStatus.numberOfContentVersionBytesWritten]
-          ${(totalNodesWritten  / (importStatus.durationInNs / (1000 * 1000 * 1000)))?string("#0")} nodes / sec<br/>
-          [@formatBytes (totalDataWritten / (importStatus.durationInNs / (1000 * 1000 * 1000))) /] / sec
+          <span id="detailsNodesWrittenPerSecond">${(totalNodesWritten  / (importStatus.durationInNs / (1000 * 1000 * 1000)))?string("#0")} nodes / sec</span><br/>
+          <span id="detailsDataWrittenPerSecond">[@formatBytes (totalDataWritten / (importStatus.durationInNs / (1000 * 1000 * 1000))) /] / sec</span>
 [#else]
-          n/a
+          <span id="detailsNodesWrittenPerSecond">n/a</span><br/>
+          <span id="detailsDataWrittenPerSecond"></span>
 [/#if]
         </td>
       </tr>
-[#if importStatus.lastExceptionAsString??]
-      <tr>
-        <td colspan="2"><strong>Error Information From Last Run</strong></td>
-      </tr>
-      <tr>
-        <td>File that failed:</td>
-        <td>${importStatus.currentFileBeingProcessed!"n/a"}</td>
-      </tr>
-      <tr>
-        <td>Exception:</td>
-        <td><pre>${importStatus.lastExceptionAsString}</pre></td>
-      </tr>
-[/#if]
     </table>
-    </p>
-    <p>
-[#if importStatus.inProgress()]
-    This page will automatically refresh in <span id="countdownTimer">${refreshIntervalInSeconds}</span> seconds.
-[#else]
-    <a href="${url.serviceContext}/bulk/import/filesystem">Initiate another import</a>
-[/#if]
+    <div id="detailsErrorInformation" style="display:none">
+      <p><strong>Error Information From Last Run</strong></p>
+      <table border="1" cellspacing="0" cellpadding="1" width="80%">
+        <tr>
+          <td>File that failed:</td>
+          <td id="detailsFileThatFailed">${importStatus.currentFileBeingProcessed!"n/a"}</td>
+        </tr>
+        <tr>
+          <td style="vertical-align:top">Exception:</td>
+          <td><pre id="detailsLastException">${importStatus.lastExceptionAsString!"n/a"}</pre></td>
+        </tr>
+      </table>
+    </div>
     </p>
   </blockquote>
-  <script type="text/javascript">
-    var seconds = ${refreshIntervalInSeconds} + 1
-
-    function display()
-    {
-      seconds -= 1
-
-      document.getElementById("countdownTimer").textContent = seconds
-      setTimeout("display()", 1000)
-    }
-
-    display()
-  </script>
 </body>
 </html>

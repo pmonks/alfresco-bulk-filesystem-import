@@ -1,26 +1,23 @@
 /*
- * Copyright (C) 2005-2011 Alfresco Software Limited.
+ * Copyright (C) 2007-2013 Peter Monks.
+ *               2010      Martin Bergljung Fixed issue #4.
+ *               2010      Stefan Topfstedt Fixed issues #20, #24.
+ *               2011      Ryan McVeigh     Fixed issues #18, #62.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
- * As a special exception to the terms and conditions of version 2.0 of 
- * the GPL, you may redistribute this Program in connection with Free/Libre 
- * and Open Source Software ("FLOSS") applications as described in Alfresco's 
- * FLOSS exception.  You should have received a copy of the text describing 
- * the FLOSS exception, and it is also available here: 
- * http://www.alfresco.com/legal/licensing"
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * This file is part of an unsupported extension to Alfresco.
+ * 
  */
 
 package org.alfresco.extension.bulkfilesystemimport.impl;
@@ -45,6 +42,7 @@ import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
 import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
+import org.alfresco.repo.tenant.AbstractTenantRoutingContentStore;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
@@ -74,6 +72,7 @@ import org.alfresco.extension.bulkfilesystemimport.ImportableItem;
 import org.alfresco.extension.bulkfilesystemimport.MetadataLoader;
 import org.alfresco.extension.bulkfilesystemimport.ImportFilter;
 import org.alfresco.extension.bulkfilesystemimport.impl.BulkImportStatusImpl.NodeState;
+import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 
 
 /**
@@ -100,7 +99,8 @@ public abstract class AbstractBulkFilesystemImporter
     protected final VersionService       versionService;
     protected final MimetypeService      mimeTypeService;
     
-    protected final BulkImportStatusImpl importStatus;
+    protected final BulkImportStatusImpl  importStatus;
+    protected final DataDictionaryBuilder dataDictionaryBuilder;
 
     private DirectoryAnalyser  directoryAnalyser = null;
     private List<ImportFilter> importFilters     = null;
@@ -108,10 +108,11 @@ public abstract class AbstractBulkFilesystemImporter
     private int                batchWeight       = DEFAULT_BATCH_WEIGHT;
 
 
-    protected AbstractBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
-                                             final BehaviourFilter      behaviourFilter,
-                                             final ContentStore         configuredContentStore,
-                                             final BulkImportStatusImpl importStatus)
+    protected AbstractBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
+                                             final BehaviourFilter       behaviourFilter,
+                                             final ContentStore          configuredContentStore,
+                                             final BulkImportStatusImpl  importStatus,
+                                             final DataDictionaryBuilder dataDictionaryBuilder)
     {
         this.serviceRegistry        = serviceRegistry;
         this.behaviourFilter        = behaviourFilter;
@@ -123,7 +124,9 @@ public abstract class AbstractBulkFilesystemImporter
         this.mimeTypeService   = serviceRegistry.getMimetypeService();
         
         this.importStatus      = importStatus;
-        this.importFilters     = new ArrayList<ImportFilter>();
+        
+        this.dataDictionaryBuilder = dataDictionaryBuilder;
+        this.importFilters         = new ArrayList<ImportFilter>();
     }
     
     public final void setDirectoryAnalyser(final DirectoryAnalyser directoryAnalyser)
@@ -162,32 +165,79 @@ public abstract class AbstractBulkFilesystemImporter
         validateNodeRefIsWritableSpace(target);
         validateFileIsReadableDirectory(source);
         
+        if (log.isDebugEnabled())
+        {
+            log.debug("---- Data Dictionary:\n" + dataDictionaryBuilder.toString());
+        }
+        
         bulkImportImpl(target, source, replaceExisting, isInContentStore(source));
     }
     
     
+    /**
+     * @see org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter#stopImport()
+     */
+    @Override
+    public void stopImport()
+    {
+        throw new IllegalStateException("Stopping an import is not supported by this implementation.");
+    }
+    
+    
+    /**
+     * Determines whether the given file is located in the given file content store.
+     * @param fileContentStore The file content store to check <i>(must not be null)</i>.
+     * @param source           The file to check <i>(must not be null)</i>.
+     * @return True if the given file is in an Alfresco managed content store, false otherwise.
+     */
+    private final boolean isInContentStore(final FileContentStore fileContentStore, final File source)
+    {
+        boolean result            = false;
+        String  storeRootLocation = fileContentStore.getRootLocation();
+        String  sourcePath        = source.getAbsolutePath();   // Note: we don't use getCanonicalPath here because it dereferences symlinks (which we don't want)
+        
+        result = sourcePath.startsWith(storeRootLocation);
+        
+        return(result);
+    }
+
+
+    /**
+     * Determines whether the given file is already located in an Alfresco managed content store.  Used to determine
+     * whether to perform a streaming or in-place import.
+     * 
+     * @param source The file to test.  Typically this would be the source directory for the import <i>(must not be null)</i>.
+     * @return True if the given file is in an Alfresco managed content store, false otherwise.
+     */
     private final boolean isInContentStore(final File source)
     {
         boolean result = false;
-        
-        // Ignore non-file content stores
+
         if (configuredContentStore instanceof FileContentStore)
         {
-            String storeRootLocation = configuredContentStore.getRootLocation();
-            String sourcePath        = null;
-            
-            try
-            {
-                sourcePath = source.getCanonicalPath();
-            }
-            catch (final IOException ioe)
-            {
-                sourcePath = source.getAbsolutePath();
-            }
-            
-            result = sourcePath.startsWith(storeRootLocation);
+            result = isInContentStore((FileContentStore)configuredContentStore, source);
         }
-        
+        // It's a shame org.alfresco.repo.content.AbstractRoutingContentStore.getAllStores() is protected - that limits the applicability of this solution 
+        else if (configuredContentStore instanceof AbstractTenantRoutingContentStore)
+        {
+            List<ContentStore> backingStores = ((AbstractTenantRoutingContentStore)configuredContentStore).getAllStores();
+            
+            if (backingStores != null)
+            {
+                for (ContentStore store : backingStores)
+                {
+                    if (store instanceof FileContentStore)
+                    {
+                        if (isInContentStore((FileContentStore)store, source))
+                        {
+                            result = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         return(result);
     }
 

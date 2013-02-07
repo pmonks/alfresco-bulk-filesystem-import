@@ -1,20 +1,14 @@
 [#ftl]
 <?xml version='1.0' encoding='UTF-8'?>
 <BulkFilesystemImportStatus>
-  <CurrentStatus>[@compress single_line=true]
+  <InProgress>[#compress]
 [#if importStatus.inProgress()]
-    In progress
+    true
 [#else]
-    Idle
+    false
 [/#if]
-[/@compress]</CurrentStatus>
-  <ResultOfLastExecution>[@compress single_line=true]
-[#if importStatus.lastExceptionAsString??]
-    Failed
-[#else]
-    Succeeded
-[/#if]
-[/@compress]</ResultOfLastExecution>
+[/#compress]</InProgress>
+  <Status>${importStatus.status}</Status>
 [#if importStatus.sourceDirectory??]
   <SourceDirectory>${importStatus.sourceDirectory}</SourceDirectory>
 [/#if]
@@ -30,15 +24,16 @@
   <ActiveThreads>${importStatus.numberOfActiveThreads?c}</ActiveThreads>
 [/#if]
 [#if importStatus.startDate??]
-  <StartDate>${importStatus.startDate?datetime?string("yyyy-MM-dd'T'HH:mm:ss.SSS")}</StartDate>
+  <StartDate>${importStatus.startDate?datetime?iso_utc}</StartDate>
 [/#if]
 [#if importStatus.endDate??]
-  <EndDate>${importStatus.endDate?datetime?string("yyyy-MM-dd'T'HH:mm:ss.SSS")}</EndDate>
+  <EndDate>${importStatus.endDate?datetime?iso_utc}</EndDate>
 [/#if]
 [#if importStatus.durationInNs??]
   <DurationInNS>${importStatus.durationInNs?c}</DurationInNS>
 [/#if]
-  <CompletedBatches>${importStatus.numberOfBatchesCompleted}</CompletedBatches>
+  <CompletedBatches>${importStatus.numberOfBatchesCompleted?c}</CompletedBatches>
+  <CurrentFileOrFolder>${importStatus.currentFileBeingProcessed!"n/a"}</CurrentFileOrFolder>
   <SourceStatistics>
     <LastFileOrFolderProcessed>${importStatus.currentFileBeingProcessed!"n/a"}</LastFileOrFolderProcessed>
     <FilesScanned>${importStatus.numberOfFilesScanned?c}</FilesScanned>

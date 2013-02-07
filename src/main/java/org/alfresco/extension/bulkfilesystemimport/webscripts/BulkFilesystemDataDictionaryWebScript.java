@@ -22,6 +22,7 @@ package org.alfresco.extension.bulkfilesystemimport.webscripts;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -30,34 +31,32 @@ import org.springframework.extensions.webscripts.DeclarativeWebScript;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 
-import org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter;
-
 
 /**
- * Web Script class that provides status information on the bulk filesystem import process.
+ * Web Script class that provides status information on the installed data dictionary.
  *
  * @author Peter Monks (peter.monks@alfresco.com)
  */
-public class BulkFilesystemImportStatusWebScript
+public class BulkFilesystemDataDictionaryWebScript
     extends DeclarativeWebScript
 {
-    private final static Log log = LogFactory.getLog(BulkFilesystemImportStatusWebScript.class);
+    private final static Log log = LogFactory.getLog(BulkFilesystemDataDictionaryWebScript.class);
     
     
     // Output parameters (for Freemarker)
-    private final static String RESULT_IMPORT_STATUS = "importStatus";
+    private final static String RESULT_DATA_DICTIONARY = "dataDictionary";
     
     // Attributes
-    private final BulkFilesystemImporter importer;
+    private final DataDictionaryBuilder dataDictionaryBuilder;
     
     
-    public BulkFilesystemImportStatusWebScript(final BulkFilesystemImporter importer)
+    public BulkFilesystemDataDictionaryWebScript(final DataDictionaryBuilder dataDictionaryBuilder)
     {
         // PRECONDITIONS
-        assert importer != null : "importer must not be null.";
+        assert dataDictionaryBuilder != null : "dataDictionaryBuilder must not be null.";
         
         //BODY
-        this.importer = importer;
+        this.dataDictionaryBuilder = dataDictionaryBuilder;
     }
     
 
@@ -73,7 +72,7 @@ public class BulkFilesystemImportStatusWebScript
         
         cache.setNeverCache(true);
         
-        result.put(RESULT_IMPORT_STATUS, importer.getStatus());
+        result.put(RESULT_DATA_DICTIONARY, dataDictionaryBuilder.getDataDictionary());
         
         return(result);
     }

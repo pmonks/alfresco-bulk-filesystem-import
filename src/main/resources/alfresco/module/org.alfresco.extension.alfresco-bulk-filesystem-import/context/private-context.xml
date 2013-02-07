@@ -16,6 +16,12 @@
   <bean id="bfsit-status" class="org.alfresco.extension.bulkfilesystemimport.impl.BulkImportStatusImpl" />
 
 
+  <!-- Data Dictionary -->
+  <bean id="bfsit-data-dictionary-builder" class="org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilderImpl">
+    <constructor-arg index="0" ref="ServiceRegistry" />
+  </bean>
+
+
   <!-- Directory analyser -->
   <bean id="bfsit-directory-analyser" class="org.alfresco.extension.bulkfilesystemimport.impl.DirectoryAnalyserImpl">
     <constructor-arg index="0" ref="bfsit-metadata-loader" />
@@ -45,6 +51,7 @@
     <constructor-arg index="1" ref="policyBehaviourFilter" />
     <constructor-arg index="2" ref="fileContentStore" />
     <constructor-arg index="3" ref="bfsit-status" />
+    <constructor-arg index="4" ref="bfsit-data-dictionary-builder" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
@@ -62,7 +69,8 @@
     <constructor-arg index="1" ref="policyBehaviourFilter" /> 
     <constructor-arg index="2" ref="fileContentStore" />
     <constructor-arg index="3" ref="bfsit-status" />
-    <constructor-arg index="4" ref="bfsit-thread-factory" />
+    <constructor-arg index="4" ref="bfsit-data-dictionary-builder" />
+    <constructor-arg index="5" ref="bfsit-thread-factory" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
@@ -77,6 +85,7 @@
     <constructor-arg index="1" ref="policyBehaviourFilter" /> 
     <constructor-arg index="2" ref="fileContentStore" />
     <constructor-arg index="3" ref="bfsit-status" />
+    <constructor-arg index="4" ref="bfsit-data-dictionary-builder" />
     <property name="directoryAnalyser" ref="bfsit-directory-analyser" />
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
@@ -104,6 +113,7 @@
     <constructor-arg index="1" value="${alfresco-bulk-filesystem-import.threadpool.size.max}" />          <!-- Maximum Thread Pool Size -->
     <constructor-arg index="2" value="${alfresco-bulk-filesystem-import.threadpool.keepAlive.time}" />    <!-- Keep alive time -->
     <constructor-arg index="3" value="${alfresco-bulk-filesystem-import.threadpool.keepAlive.units}" />   <!-- Keep alive time units - see http://download.oracle.com/javase/6/docs/api/java/util/concurrent/TimeUnit.html for allowed values -->
+    <constructor-arg index="4" value="${alfresco-bulk-filesystem-import.queue.size.max}" />               <!-- The maximum size (number of entries) allowed in the queue that feeds the thread pool -->
   </bean>
   
   <bean id="bfsit-multi-threaded-bulk-filesystem-importer-manualsize-threadpool"

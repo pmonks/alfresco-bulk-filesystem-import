@@ -1,26 +1,20 @@
 /*
- * Copyright (C) 2005-2010 Alfresco Software Limited.
+ * Copyright (C) 2007-2013 Peter Monks.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
- * As a special exception to the terms and conditions of version 2.0 of 
- * the GPL, you may redistribute this Program in connection with Free/Libre 
- * and Open Source Software ("FLOSS") applications as described in Alfresco's 
- * FLOSS exception.  You should have received a copy of the text describing 
- * the FLOSS exception, and it is also available here: 
- * http://www.alfresco.com/legal/licensing"
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * This file is part of an unsupported extension to Alfresco.
+ * 
  */
 
 package org.alfresco.extension.bulkfilesystemimport;
@@ -36,7 +30,8 @@ import java.util.Date;
 public interface BulkImportStatus
 {
     // General information
-    boolean inProgress();
+    boolean         inProgress();
+    ProcessingState getProcessingState();
     
     String     getSourceDirectory();
     String     getTargetSpace();
@@ -100,6 +95,32 @@ public interface BulkImportStatus
         private final String name;
         
         private ImportType(final String name)
+        {
+            this.name = name;
+            
+        }
+        
+        @Override
+        public String toString()
+        {
+            return(name);
+        }
+    };
+    
+    public enum ProcessingState
+    {
+        NEVER_RUN("Never run"),
+        RUNNING("Running"),
+        SUCCESSFUL("Successful"),
+        STOPPING("Stopping"),
+        STOPPED("Stopped"),
+        FAILED("Failed");
+        
+        // The following allows us to create human-readable names for this enum.
+        // Note that it breaks round-tripping (enum -> String -> enum).
+        private final String name;
+        
+        private ProcessingState(final String name)
         {
             this.name = name;
             

@@ -1,26 +1,20 @@
 /*
- * Copyright (C) 2005-2010 Alfresco Software Limited.
+ * Copyright (C) 2007-2013 Peter Monks.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
- * As a special exception to the terms and conditions of version 2.0 of 
- * the GPL, you may redistribute this Program in connection with Free/Libre 
- * and Open Source Software ("FLOSS") applications as described in Alfresco's 
- * FLOSS exception.  You should have received a copy of the text describing 
- * the FLOSS exception, and it is also available here: 
- * http://www.alfresco.com/legal/licensing"
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * This file is part of an unsupported extension to Alfresco.
+ * 
  */
 
 package org.alfresco.extension.bulkfilesystemimport.impl;
@@ -32,6 +26,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
+import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus.ProcessingState;
+import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
@@ -54,15 +50,35 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
     
     private final ThreadFactory threadFactory;
     
-    public AsynchronousSingleThreadedBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
-                                                            final BehaviourFilter      behaviourFilter,
-                                                            final ContentStore         configuredContentStore,
-                                                            final BulkImportStatusImpl importStatus,
-                                                            final ThreadFactory        threadFactory)
+    private Thread backgroundThread = null;
+
+    
+    public AsynchronousSingleThreadedBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
+                                                            final BehaviourFilter       behaviourFilter,
+                                                            final ContentStore          configuredContentStore,
+                                                            final BulkImportStatusImpl  importStatus,
+                                                            final DataDictionaryBuilder dataDictionaryBuilder,
+                                                            final ThreadFactory         threadFactory)
     {
-        super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus);
+        super(serviceRegistry, behaviourFilter, configuredContentStore, importStatus, dataDictionaryBuilder);
         
         this.threadFactory = threadFactory;
+    }
+    
+    
+    @Override
+    public void stopImport()
+    {
+        if (!importStatus.inProgress() || importStatus.getProcessingState().equals(ProcessingState.STOPPING))
+        {
+            throw new IllegalStateException("Import not in progress.");
+        }
+        
+        if (backgroundThread != null && backgroundThread.isAlive())
+        {
+            importStatus.stopping();
+            backgroundThread.interrupt();
+        }
     }
     
 
@@ -77,7 +93,6 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
         throws Throwable
     {
         Runnable     backgroundLogic  = null;
-        Thread       backgroundThread = null;
         final String currentUser      = AuthenticationUtil.getFullyAuthenticatedUser();
 
         backgroundLogic = new Runnable()
@@ -104,16 +119,25 @@ public class AsynchronousSingleThreadedBulkFilesystemImporter
                                                          inPlaceImport ? BulkImportStatus.ImportType.IN_PLACE : BulkImportStatus.ImportType.STREAMING,
                                                          getBatchWeight());
                                 bulkImportRecursively(target, getFileName(source), source, replaceExisting, inPlaceImport);
-                                importStatus.stopImport();
+                                
+                                if (importStatus.getProcessingState().equals(ProcessingState.STOPPING))
+                                {
+                                    importStatus.importStopped();
+                                    log.info("Bulk import from '" + getFileName(source) + "' stopped.");
+                                }
+                                else
+                                {
+                                    importStatus.importSucceeded();
+                                    log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
+                                }
 
-                                log.info("Bulk import from '" + getFileName(source) + "' succeeded.");
                                 logStatus(importStatus);
                             }
                             catch (final Throwable t)
                             {
                                 log.error("Bulk import from '" + getFileName(source) + "' failed.", t);
                                 
-                                importStatus.stopImport(t);
+                                importStatus.importFailed(t);
                                 
                                 // Ugh Java's checked exceptions are the pits!
                                 if (t instanceof Exception)

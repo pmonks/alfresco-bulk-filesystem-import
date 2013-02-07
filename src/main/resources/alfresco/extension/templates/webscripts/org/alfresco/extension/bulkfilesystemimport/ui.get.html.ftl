@@ -2,25 +2,21 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Bulk Filesystem Import Tool</title>
+    <title>Bulk Filesystem Import Tool (Community maintained)</title>
     <link rel="stylesheet" href="${url.context}/css/main.css" TYPE="text/css">
 
     <!-- YUI 3.x -->
-    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/combo?3.3.0/build/widget/assets/skins/sam/widget.css&3.3.0/build/widget/assets/skins/sam/widget-stack.css&3.3.0/build/autocomplete/assets/skins/sam/autocomplete.css">
-    <script type="text/javascript" src="http://yui.yahooapis.com/combo?3.3.0/build/yui/yui-min.js&3.3.0/build/intl/intl-min.js&3.3.0/build/autocomplete/lang/autocomplete.js&3.3.0/build/collection/array-extras-min.js&3.3.0/build/oop/oop-min.js&3.3.0/build/event-custom/event-custom-min.js&3.3.0/build/attribute/attribute-min.js&3.3.0/build/base/base-base-min.js&3.3.0/build/base/base-build-min.js&3.3.0/build/escape/escape-min.js&3.3.0/build/dom/dom-base-min.js&3.3.0/build/dom/selector-native-min.js&3.3.0/build/dom/selector-css2-min.js&3.3.0/build/event/event-base-min.js&3.3.0/build/node/node-base-min.js&3.3.0/build/event/event-base-ie-min.js&3.3.0/build/event/event-synthetic-min.js&3.3.0/build/event/event-focus-min.js&3.3.0/build/event-valuechange/event-valuechange-min.js&3.3.0/build/querystring/querystring-stringify-simple-min.js&3.3.0/build/io/io-base-min.js&3.3.0/build/json/json-parse-min.js&3.3.0/build/jsonp/jsonp-min.js&3.3.0/build/jsonp/jsonp-url-min.js&3.3.0/build/yql/yql-min.js&3.3.0/build/dom/selector-css3-min.js&3.3.0/build/pluginhost/pluginhost-min.js&3.3.0/build/base/base-pluginhost-min.js&3.3.0/build/dom/dom-style-min.js&3.3.0/build/dom/dom-style-ie-min.js&3.3.0/build/node/node-style-min.js&3.3.0/build/classnamemanager/classnamemanager-min.js&3.3.0/build/event/event-delegate-min.js&3.3.0/build/node/node-event-delegate-min.js&3.3.0/build/widget/widget-min.js&3.3.0/build/widget/widget-base-ie-min.js&3.3.0/build/dom/dom-screen-min.js&3.3.0/build/node/node-screen-min.js&3.3.0/build/widget/widget-position-min.js&3.3.0/build/widget/widget-position-align-min.js&3.3.0/build/widget/widget-stack-min.js&3.3.0/build/autocomplete/autocomplete-min.js&3.3.0/build/autocomplete/autocomplete-list-keys-min.js&3.3.0/build/autocomplete/autocomplete-list-keys-min.js"></script>
-    
+    <script src="http://yui.yahooapis.com/3.8.0/build/simpleyui/simpleyui-min.js"></script>
     <style type="text/css">
       .yui3-aclist-content {
         background-color   : white;
         border             : 1px solid darkgrey;
         box-shadow         : 3px 3px 4px lightgrey;
         -webkit-box-shadow : 3px 3px 4px lightgrey; /* Safari and Chrome */
-        
        }
     </style>
-    
     <!-- Validation functions -->
-    <script type="text/javascript">
+    <script>
       function validateRequired(field, errorMessageElement, errorMessage)
       {
         var result = true;
@@ -55,13 +51,14 @@
     </script>
   </head>
   <body class="yui-skin-sam">
-    <table>
+    <table cellpadding="5">
       <tr>
         <td><img src="${url.context}/images/logo/AlfrescoLogo32.png" alt="Alfresco" /></td>
-        <td><nobr>Bulk Filesystem Import Tool</nobr></td>
+        <td><strong>Bulk Filesystem Import Tool v1.2 (Community maintained)</strong><br/>
+            Alfresco ${server.edition} v${server.version}</td>
       </tr>
-      <tr><td><td>Alfresco ${server.edition} v${server.version}
     </table>
+    <p>Please see the <a target="_blank" href="http://code.google.com/p/alfresco-bulk-filesystem-import/">project site</a> for documentation, known issues, updated versions, etc.</p>
     <form action="${url.service}/initiate" method="get" enctype="multipart/form-data" charset="utf-8" onsubmit="return validateForm(this);">
       <table>
         <tr>
@@ -92,18 +89,20 @@
       </table>
       <br/>
     </form>
-    <script type="text/javascript">
-    YUI().use("autocomplete", "autocomplete-highlighters", "datasource-get", function(Y)
-    {
-      Y.one('#targetPath').plug(Y.Plugin.AutoComplete,
+    
+    <script>
+      YUI().use('autocomplete', 'autocomplete-highlighters', function (Y)
       {
-        source            : '${url.service}/ajax/suggest/spaces.json?query={query}',
-        maxResults        : 25,
-        resultHighlighter : 'phraseMatch',
-        resultListLocator : 'data',
-        resultTextLocator : 'path'
+        Y.one('#targetPath').plug(Y.Plugin.AutoComplete,
+        {
+          maxResults        : 25,
+          resultHighlighter : 'phraseMatch',
+          resultListLocator : 'data',
+          resultTextLocator : 'path',
+          source            : '${url.service}/ajax/suggest/spaces.json?query={query}'
+        });
       });
-    });
-    </script>    
+    </script>
+    
   </body>
 </html>

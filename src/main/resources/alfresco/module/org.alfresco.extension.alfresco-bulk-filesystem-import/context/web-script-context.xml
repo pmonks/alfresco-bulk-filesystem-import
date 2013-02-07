@@ -10,6 +10,12 @@
 
   <!-- Java-backed Web Scripts for the bulk filesystem importer -->
 
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.ui.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportUIWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-importer" /> 
+  </bean>
+
   <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.initiate.get"
         class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportWebScript"
         parent="webscript">
@@ -21,7 +27,19 @@
   <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.status.get"
         class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportStatusWebScript"
         parent="webscript">
-    <constructor-arg index="0" ref="bfsit-importer" /> 
+    <constructor-arg index="0" ref="bfsit-importer" />
+  </bean>
+  
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.stop.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportStopWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-importer" />
+  </bean>
+  
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.datadictionary.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemDataDictionaryWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-data-dictionary-builder" />
   </bean>
   
 </beans>
