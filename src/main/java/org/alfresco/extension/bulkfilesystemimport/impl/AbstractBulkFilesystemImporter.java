@@ -42,7 +42,6 @@ import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
 import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
-import org.alfresco.repo.tenant.AbstractTenantRoutingContentStore;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
@@ -216,26 +215,6 @@ public abstract class AbstractBulkFilesystemImporter
         if (configuredContentStore instanceof FileContentStore)
         {
             result = isInContentStore((FileContentStore)configuredContentStore, source);
-        }
-        // It's a shame org.alfresco.repo.content.AbstractRoutingContentStore.getAllStores() is protected - that limits the applicability of this solution 
-        else if (configuredContentStore instanceof AbstractTenantRoutingContentStore)
-        {
-            List<ContentStore> backingStores = ((AbstractTenantRoutingContentStore)configuredContentStore).getAllStores();
-            
-            if (backingStores != null)
-            {
-                for (ContentStore store : backingStores)
-                {
-                    if (store instanceof FileContentStore)
-                    {
-                        if (isInContentStore((FileContentStore)store, source))
-                        {
-                            result = true;
-                            break;
-                        }
-                    }
-                }
-            }
         }
 
         return(result);
