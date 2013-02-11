@@ -8,7 +8,7 @@
     false
 [/#if]
 [/#compress]</InProgress>
-  <Status>${importStatus.status}</Status>
+  <Status>${importStatus.processingState}</Status>
 [#if importStatus.sourceDirectory??]
   <SourceDirectory>${importStatus.sourceDirectory}</SourceDirectory>
 [/#if]
