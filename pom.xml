@@ -12,7 +12,7 @@
   <packaging>jar</packaging>
 -->
   <name>Alfresco Bulk Filesystem Import (for Alfresco v4.0 and v4.1)</name>
-  <version>1.2</version>
+  <version>1.2.1</version>
 
   <licenses>
     <license>
