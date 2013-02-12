@@ -228,7 +228,7 @@
             </tr>
             <tr>
               <td><span id="detailsContentFilesRead">${importStatus.numberOfContentFilesRead}</span> (<span id="detailsContentBytesRead">[@formatBytes importStatus.numberOfContentBytesRead/]</span>)</td>
-              <td><span id="detailsMetadataFilesRead">${importStatus.numberOfMetadataFilesRead}</span> (<span id="detailsMetadataBytesRead">[@formatBytes importStatus.numberOfMetadataBytesRead/](/span>)</td>
+              <td><span id="detailsMetadataFilesRead">${importStatus.numberOfMetadataFilesRead}</span> (<span id="detailsMetadataBytesRead">[@formatBytes importStatus.numberOfMetadataBytesRead/]</span>)</td>
               <td><span id="detailsContentVersionFilesRead">${importStatus.numberOfContentVersionFilesRead}</span> (<span id="detailsContentVersionBytesRead">[@formatBytes importStatus.numberOfContentVersionBytesRead/]</span>)</td>
               <td><span id="detailsMetadataVersionFilesRead">${importStatus.numberOfMetadataVersionFilesRead}</span> (<span id="detailsMetadataVersionBytesRead">[@formatBytes importStatus.numberOfMetadataVersionBytesRead/]</span>)</td>
             </tr>

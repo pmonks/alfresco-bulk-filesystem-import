@@ -25,11 +25,9 @@ import java.util.Date;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
 import org.alfresco.extension.bulkfilesystemimport.ImportableItem;
-import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus.ProcessingState;
 
 
 /**
@@ -58,37 +56,37 @@ public class BulkImportStatusImpl
     private AtomicLong         numberOfBatchesCompleted  = new AtomicLong();
     
     // Read-side information
-    private AtomicLong    numberOfFoldersScanned                  = new AtomicLong();
-    private AtomicLong    numberOfFilesScanned                    = new AtomicLong();
-    private AtomicLong    numberOfUnreadableEntries               = new AtomicLong(); 
+    private AtomicLong numberOfFoldersScanned                  = new AtomicLong();
+    private AtomicLong numberOfFilesScanned                    = new AtomicLong();
+    private AtomicLong numberOfUnreadableEntries               = new AtomicLong(); 
     
-    private AtomicLong    numberOfContentFilesRead                = new AtomicLong();
-    private AtomicLong    numberOfContentBytesRead                = new AtomicLong();
+    private AtomicLong numberOfContentFilesRead                = new AtomicLong();
+    private AtomicLong numberOfContentBytesRead                = new AtomicLong();
     
-    private AtomicLong    numberOfMetadataFilesRead               = new AtomicLong();
-    private AtomicLong    numberOfMetadataBytesRead               = new AtomicLong();
+    private AtomicLong numberOfMetadataFilesRead               = new AtomicLong();
+    private AtomicLong numberOfMetadataBytesRead               = new AtomicLong();
     
-    private AtomicLong    numberOfContentVersionFilesRead         = new AtomicLong();
-    private AtomicLong    numberOfContentVersionBytesRead         = new AtomicLong();
+    private AtomicLong numberOfContentVersionFilesRead         = new AtomicLong();
+    private AtomicLong numberOfContentVersionBytesRead         = new AtomicLong();
     
-    private AtomicLong    numberOfMetadataVersionFilesRead        = new AtomicLong();
-    private AtomicLong    numberOfMetadataVersionBytesRead        = new AtomicLong();
+    private AtomicLong numberOfMetadataVersionFilesRead        = new AtomicLong();
+    private AtomicLong numberOfMetadataVersionBytesRead        = new AtomicLong();
     
     // Write-side information
-    private AtomicLong    numberOfSpaceNodesCreated               = new AtomicLong();
-    private AtomicLong    numberOfSpaceNodesReplaced              = new AtomicLong();
-    private AtomicLong    numberOfSpaceNodesSkipped               = new AtomicLong();
-    private AtomicLong    numberOfSpacePropertiesWritten          = new AtomicLong();
+    private AtomicLong numberOfSpaceNodesCreated               = new AtomicLong();
+    private AtomicLong numberOfSpaceNodesReplaced              = new AtomicLong();
+    private AtomicLong numberOfSpaceNodesSkipped               = new AtomicLong();
+    private AtomicLong numberOfSpacePropertiesWritten          = new AtomicLong();
     
-    private AtomicLong    numberOfContentNodesCreated             = new AtomicLong();
-    private AtomicLong    numberOfContentNodesReplaced            = new AtomicLong();
-    private AtomicLong    numberOfContentNodesSkipped             = new AtomicLong();
-    private AtomicLong    numberOfContentBytesWritten             = new AtomicLong();
-    private AtomicLong    numberOfContentPropertiesWritten        = new AtomicLong();
+    private AtomicLong numberOfContentNodesCreated             = new AtomicLong();
+    private AtomicLong numberOfContentNodesReplaced            = new AtomicLong();
+    private AtomicLong numberOfContentNodesSkipped             = new AtomicLong();
+    private AtomicLong numberOfContentBytesWritten             = new AtomicLong();
+    private AtomicLong numberOfContentPropertiesWritten        = new AtomicLong();
     
-    private AtomicLong    numberOfContentVersionsCreated          = new AtomicLong();
-    private AtomicLong    numberOfContentVersionBytesWritten      = new AtomicLong();
-    private AtomicLong    numberOfContentVersionPropertiesWritten = new AtomicLong();
+    private AtomicLong numberOfContentVersionsCreated          = new AtomicLong();
+    private AtomicLong numberOfContentVersionBytesWritten      = new AtomicLong();
+    private AtomicLong numberOfContentVersionPropertiesWritten = new AtomicLong();
 
 
     // General information
@@ -235,14 +233,8 @@ public class BulkImportStatusImpl
     
     public void importStopped()
     {
-        if (!inProgress.compareAndSet(true, false))
-        {
-            throw new RuntimeException("Import not in progress.");
-        }
-        
-        endNs            = System.nanoTime();
-        endDate          = new Date();
-        processingState  = ProcessingState.STOPPED;
+        importSucceeded();
+        processingState = ProcessingState.STOPPED;
     }
     
     public void importFailed(final Throwable lastException)
