@@ -107,11 +107,11 @@ public class BulkImportStatusImpl
         {
             if (endNs != null)
             {
-                result = new Long(endNs - startNs);
+                result = Long.valueOf(endNs - startNs);
             }
             else
             {
-                result = new Long(System.nanoTime() - startNs);
+                result = Long.valueOf(System.nanoTime() - startNs);
             }
         }
         
