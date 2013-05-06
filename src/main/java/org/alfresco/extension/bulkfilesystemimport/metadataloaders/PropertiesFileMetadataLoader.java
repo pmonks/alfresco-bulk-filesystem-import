@@ -24,6 +24,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.Properties;
 
 import org.alfresco.extension.bulkfilesystemimport.MetadataLoader;
 import org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -108,17 +110,24 @@ public final class PropertiesFileMetadataLoader
     @Override
     protected Map<String,Serializable> loadMetadataFromFile(File metadataFile)
     {
-        Map<String,Serializable> result = null;
+        Map<String,Serializable> result              = null;
+        InputStream              metadataInputStream = null;
         
         try
         {
             Properties props = new Properties();
-            props.load(new BufferedInputStream(new FileInputStream(metadataFile)));
+
+            metadataInputStream = new BufferedInputStream(new FileInputStream(metadataFile)); 
+            props.load(metadataInputStream);
             result = new HashMap<String,Serializable>((Map)props);
         }
         catch (final IOException ioe)
         {
             if (log.isWarnEnabled()) log.warn("Metadata file '" + AbstractBulkFilesystemImporter.getFileName(metadataFile) + "' could not be read.", ioe);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(metadataInputStream);
         }
         
         return(result);
