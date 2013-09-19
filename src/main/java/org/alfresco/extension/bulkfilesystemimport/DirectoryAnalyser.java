@@ -35,9 +35,14 @@ import java.io.File;
 public interface DirectoryAnalyser
 {
     /**
-     * Regex string for the version filename suffix
+     * Regex string for version labels.
      */
-    public final static String VERSION_SUFFIX_REGEX = "\\.v([0-9]+)\\z";
+    public final static String VERSION_LABEL_REGEX  = "([\\d]+)(\\.([\\d]+))?"; // Group 0 = version label, Group 1 = major version #, group 3 (if not null) = minor version #
+
+    /**
+     * Regex string for version labels within filenames.
+     */
+    public final static String VERSION_SUFFIX_REGEX = "\\.v(" + VERSION_LABEL_REGEX + ")\\z"; // Note: group numbers are one greater than shown above
     
     /**
      * Analyses the given directory.

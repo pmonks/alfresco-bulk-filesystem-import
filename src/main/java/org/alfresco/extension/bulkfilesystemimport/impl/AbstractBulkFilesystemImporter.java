@@ -626,11 +626,12 @@ public abstract class AbstractBulkFilesystemImporter
     }
     
     
-    private final int importContentVersions(final NodeRef          nodeRef,
-                                            final ImportableItem   importableItem,
-                                            final boolean          inPlaceImport)
+    private final int importContentVersions(final NodeRef        nodeRef,
+                                            final ImportableItem importableItem,
+                                            final boolean        inPlaceImport)
     {
-        int result = 0;
+        int result               = 0;
+        int previousMajorVersion = 0;
         
         for (final ImportableItem.VersionedContentAndMetadata versionEntry : importableItem.getVersionEntries())
         {
@@ -639,13 +640,23 @@ public abstract class AbstractBulkFilesystemImporter
             
             importContentAndMetadata(nodeRef, versionEntry, inPlaceImport, metadata);
 
-            if (log.isDebugEnabled()) log.debug("Creating v" + String.valueOf(versionEntry.getVersion()) + " of node '" + nodeRef.toString() + "' (note: version label in Alfresco will not be the same - it is not currently possible to explicitly force a particular version label).");
+            if (log.isDebugEnabled()) log.debug("Creating v" + String.valueOf(versionEntry.getVersionLabel()) + " of node '" + nodeRef.toString() + "' (note: version label in Alfresco will not be the same - it is not currently possible to explicitly force a particular version label - see https://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=85).");
   
             // Note: PROP_VERSION_LABEL is a "reserved" property, and cannot be modified by custom code.
             // In other words, we can't use the version label on disk as the version label in Alfresco.  :-(
             // See: http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=85
-//            versionProperties.put(ContentModel.PROP_VERSION_LABEL.toPrefixString(), String.valueOf(versionEntry.getVersion()));
-            versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);   // Load every version as a major version for now - see http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=84
+//            versionProperties.put(ContentModel.PROP_VERSION_LABEL.toPrefixString(), versionEntry.getVersionLabel());
+            
+            if (versionEntry.getMajorVersion() > previousMajorVersion)
+            {
+                versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                previousMajorVersion = versionEntry.getMajorVersion();
+            }
+            else
+            {
+                versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+            }
+            
             versionService.createVersion(nodeRef, versionProperties);
             
             result += metadata.getProperties().size() + 4;  // Add 4 for "standard" metadata properties read from filesystem

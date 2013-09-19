@@ -185,8 +185,8 @@ public final class DirectoryAnalyserImpl
         }
 
         ImportableItem                             importableItem = findOrCreateImportableItem(importableItems, parentContentFile);
-        int                                        version        = getVersionNumber(versionFile);
-        ImportableItem.VersionedContentAndMetadata versionEntry   = findOrCreateVersionEntry(importableItem, version);
+        String                                     versionLabel   = getVersionLabel(versionFile);
+        ImportableItem.VersionedContentAndMetadata versionEntry   = findOrCreateVersionEntry(importableItem, versionLabel);
 
         if (isContentVersion)
         {
@@ -236,13 +236,13 @@ public final class DirectoryAnalyserImpl
     }
 
 
-    private ImportableItem.VersionedContentAndMetadata findOrCreateVersionEntry(final ImportableItem importableItem, final int version)
+    private ImportableItem.VersionedContentAndMetadata findOrCreateVersionEntry(final ImportableItem importableItem, final String versionLabel)
     {
-        ImportableItem.VersionedContentAndMetadata result = findVersionEntry(importableItem, version);
+        ImportableItem.VersionedContentAndMetadata result = importableItem.getVersionEntry(versionLabel);
 
         if (result == null)
         {
-            result = importableItem.new VersionedContentAndMetadata(version);
+            result = importableItem.new VersionedContentAndMetadata(versionLabel);
             
             importableItem.addVersionEntry(result);
         }
@@ -251,32 +251,9 @@ public final class DirectoryAnalyserImpl
     }
 
 
-    private ImportableItem.VersionedContentAndMetadata findVersionEntry(final ImportableItem importableItem, final int version)
+    private String getVersionLabel(final File versionFile)
     {
-        ImportableItem.VersionedContentAndMetadata result = null;
-
-        // Note: it would be better to store VersionEntries in a Map as well, and convert to a list later on, but in most
-        // cases version histories are small enough that we can get away with the inefficiencies of finding items in lists.
-        // See http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=91 for a related problem.
-        if (importableItem.hasVersionEntries())
-        {
-            for (final ImportableItem.VersionedContentAndMetadata versionEntry : importableItem.getVersionEntries())
-            {
-                if (version == versionEntry.getVersion())
-                {
-                    result = versionEntry;
-                    break;
-                }
-            }
-        }
-
-        return(result);
-    }
-
-
-    private int getVersionNumber(final File versionFile)
-    {
-        int result = -1;
+        String result = null;
 
         if (!isVersionFile(versionFile))
         {
@@ -284,18 +261,15 @@ public final class DirectoryAnalyserImpl
         }
 
         Matcher matcher = VERSION_SUFFIX_PATTERN.matcher(versionFile.getName());
-        String versionStr = null;
 
         if (matcher.matches())
         {
-            versionStr = matcher.group(1);
+            result = matcher.group(1);
         }
         else
         {
-            throw new IllegalStateException("WTF?!?!?"); // ####TODO!!!!
+            throw new IllegalStateException(AbstractBulkFilesystemImporter.getFileName(versionFile) + " has a malformed version label."); 
         }
-
-        result = Integer.parseInt(versionStr);
 
         return(result);
     }

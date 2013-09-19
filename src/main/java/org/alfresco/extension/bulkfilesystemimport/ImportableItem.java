@@ -25,6 +25,8 @@ import java.util.Date;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 
@@ -79,11 +81,42 @@ public final class ImportableItem
         return(versionEntries != null && versionEntries.size() > 0);
     }
     
+    /**
+     * @param versionLabel The version label to search for <i>(must not be null, empty or blank)</i>.
+     * @return The version entry corresponding to that versionLabel <i>(may be null)</i>.
+     */
+    public VersionedContentAndMetadata getVersionEntry(final String versionLabel)
+    {
+        VersionedContentAndMetadata result = null;
+    
+        if (hasVersionEntries())
+        {
+            for (final ImportableItem.VersionedContentAndMetadata versionEntry : versionEntries)
+            {
+                if (versionEntry.getVersionLabel().equals(versionLabel))
+                {
+                    result = versionEntry;
+                    break;
+                }
+            }
+        }
+    
+        return(result);
+    }
+    
+    
+    /**
+     * @return A read-only copy of all version entries in this importable item, in increasing version label order.
+     */
     public Set<VersionedContentAndMetadata> getVersionEntries()
     {
         return(Collections.unmodifiableSet(versionEntries));
     }
     
+    
+    /**
+     * @param versionEntry The version entry to add to the set of version entries in this importable item.
+     */
     public void addVersionEntry(final VersionedContentAndMetadata versionEntry)
     {
         if (versionEntry != null)
@@ -256,32 +289,73 @@ public final class ImportableItem
         extends ContentAndMetadata
         implements Comparable<VersionedContentAndMetadata>
     {
-        private int version;
+        private final Pattern VERSION_NUMBER_PATTERN = Pattern.compile(DirectoryAnalyser.VERSION_LABEL_REGEX);
+        
+        private final int majorVersion;
+        private final int minorVersion;
 
 
-        public VersionedContentAndMetadata(final int version)
+        public VersionedContentAndMetadata(final String versionLabel)
         {
-            this.version = version;
+            Matcher m = VERSION_NUMBER_PATTERN.matcher(versionLabel);
+            
+            if (!m.matches())
+            {
+                throw new IllegalArgumentException(versionLabel + " is not a valid version label.");
+            }
+            
+            String majorVersionStr = m.group(1);
+            String minorVersionStr = m.group(3);
+            
+            majorVersion = Integer.parseInt(majorVersionStr);
+            
+            if (minorVersionStr != null)
+            {
+                minorVersion = Integer.parseInt(minorVersionStr);
+            }
+            else
+            {
+                minorVersion = 0;
+            }
         }
         
-        public final int getVersion()
+        public VersionedContentAndMetadata(final int majorVersion,
+                                           final int minorVersion)
         {
-            return(version);
+            this.majorVersion = majorVersion;
+            this.minorVersion = minorVersion;
+        }
+        
+        public final int getMajorVersion()
+        {
+            return(majorVersion);
+        }
+        
+        public final int getMinorVersion()
+        {
+            return(minorVersion);
+        }
+        
+        public final String getVersionLabel()
+        {
+            return(majorVersion + "." + minorVersion);
         }
         
         @Override
         public String toString()
         {
             return(new ToStringBuilder(this)
-                   .append("version", version)
+                   .append("version", getVersionLabel())
                    .appendSuper("")
                    .toString());
         }
 
         public int compareTo(final VersionedContentAndMetadata other)
         {
-            return(this.version < other.version ? -1 :
-                   this.version == other.version ? 0 : 1);
+            return(this.majorVersion < other.majorVersion ? -1 :
+                   this.majorVersion > other.majorVersion ?  1 :
+                   this.minorVersion < other.minorVersion ? -1 :
+                   this.minorVersion > other.minorVersion ?  1 : 0);
         }
 
         @Override
@@ -299,13 +373,14 @@ public final class ImportableItem
 
             VersionedContentAndMetadata otherVCAM = (VersionedContentAndMetadata)other;
 
-            return(this.version == otherVCAM.version);
+            return(this.majorVersion == otherVCAM.majorVersion &&
+                   this.minorVersion == otherVCAM.minorVersion);
         }
 
         @Override
         public int hashCode()
         {
-            return(version);
+            return(majorVersion * 17 + minorVersion);
         }
     }
 
