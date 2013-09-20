@@ -893,7 +893,7 @@ public abstract class AbstractBulkFilesystemImporter
     {
         MetadataLoader.Metadata result = new MetadataLoader.Metadata();
 
-        result.setType(ImportableItem.FileType.FILE.equals(fileType) ? ContentModel.TYPE_CONTENT : ContentModel.TYPE_FOLDER);
+        result.setType(ImportableItem.FileType.DIRECTORY.equals(fileType) ? ContentModel.TYPE_FOLDER : ContentModel.TYPE_CONTENT);  // Default to content (file)
 
         // Load "standard" metadata from the filesystem, if a content file exists
         if (contentAndMetadata != null && contentAndMetadata.contentFileExists())
