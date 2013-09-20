@@ -39,13 +39,54 @@ import org.apache.commons.lang.builder.ToStringBuilder;
  */
 public final class ImportableItem
 {
+    private final String parentFilename;
+    
     private ContentAndMetadata                     headRevision   = new ContentAndMetadata();
     private SortedSet<VersionedContentAndMetadata> versionEntries = null;
     
     
+    public ImportableItem(final String parentFilename)
+    {
+        // PRECONDITIONS
+        assert parentFilename != null             : "parentFilename must not be null.";
+        assert parentFilename.trim().length() > 0 : "parentFilename must not be blank or empty.";
+        
+        // Body
+        this.parentFilename = parentFilename;
+    }
+
+    
+    public String getParentFilename()
+    {
+        return(parentFilename);
+    }
+    
+    public FileType getFileType()
+    {
+        FileType result = FileType.UNKNOWN;
+        
+        if (headRevision.contentFileExists())
+        {
+            result = headRevision.getContentFileType();
+        }
+        else if (hasVersionEntries())
+        {
+            for (final VersionedContentAndMetadata versionEntry : versionEntries)
+            {
+                if (versionEntry.contentFileExists())
+                {
+                    result = versionEntry.getContentFileType();
+                }
+            }
+        }
+        
+        return(result);
+    }
+    
+    
     public boolean isValid()
     {
-        return(headRevision.contentFileExists() || headRevision.metadataFileExists());
+        return(headRevision.contentFileExists() || headRevision.metadataFileExists() || hasVersionEntries());
     }
     
     public ContentAndMetadata getHeadRevision()
@@ -201,12 +242,7 @@ public final class ImportableItem
         
         public final FileType getContentFileType()
         {
-            if (!contentFileExists())
-            {
-                throw new IllegalStateException("Cannot determine content file type if content file doesn't exist.");
-            }
-            
-            return(contentFileType);
+            return(contentFileExists() ? contentFileType : FileType.UNKNOWN);
         }
         
         public final long getContentFileSize()
@@ -389,7 +425,8 @@ public final class ImportableItem
     {
         FILE,
         DIRECTORY,
-        OTHER
+        OTHER,
+        UNKNOWN
     }
     
 }

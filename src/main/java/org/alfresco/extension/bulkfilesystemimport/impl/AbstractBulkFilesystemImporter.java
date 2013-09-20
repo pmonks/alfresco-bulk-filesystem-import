@@ -446,7 +446,7 @@ public abstract class AbstractBulkFilesystemImporter
             // If it's a directory, add it to the list of sub-directories to be processed
             if (nodeRef != null &&
                 importableItem.getHeadRevision().contentFileExists() &&
-                ImportableItem.FileType.DIRECTORY.equals(importableItem.getHeadRevision().getContentFileType()))
+                ImportableItem.FileType.DIRECTORY.equals(importableItem.getFileType()))
             {
                 result.add(new Pair<NodeRef, File>(nodeRef, importableItem.getHeadRevision().getContentFile()));
             }
@@ -466,7 +466,7 @@ public abstract class AbstractBulkFilesystemImporter
         if (log.isDebugEnabled()) log.debug("Importing " + String.valueOf(importableItem));
 
         NodeRef                             result      = null;
-        MetadataLoader.Metadata             metadata    = loadMetadata(importableItem.getHeadRevision());
+        MetadataLoader.Metadata             metadata    = loadMetadata(importableItem.getFileType(), importableItem.getHeadRevision());
         Triple<NodeRef, Boolean, NodeState> node        = createOrFindNode(target, importableItem, replaceExisting, metadata);
         boolean                             isDirectory = node.getSecond() == null ? false : node.getSecond();  // Watch out for NPEs during unboxing!
         NodeState                           nodeState   = node.getThird();
@@ -512,39 +512,23 @@ public abstract class AbstractBulkFilesystemImporter
         String                              nodeName    = getImportableItemName(importableItem, metadata);
         NodeRef                             nodeRef     = null;
         
-        //####TODO: handle this more elegantly
-        if (nodeName == null)
-        {
-            throw new IllegalStateException("Unable to determine node name for " + String.valueOf(importableItem));
-        }
-
         if (log.isDebugEnabled()) log.debug("Searching for node with name '" + nodeName + "' within node '" + target.toString() + "'.");
         nodeRef = fileFolderService.searchSimple(target, nodeName);
         
         // If we didn't find an existing item, create a new node in the repo. 
         if (nodeRef == null)
         {
-            // But only if the content file exists - we don't create new nodes based on metadata-only importableItems
-            if (importableItem.getHeadRevision().contentFileExists())
+            isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getFileType());
+            
+            try
             {
-                isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getHeadRevision().getContentFileType());
-                
-                try
-                {
-                    if (log.isDebugEnabled()) log.debug("Creating new node of type '" + metadata.getType().toString() + "' with name '" + nodeName + "' within node '" + target.toString() + "'.");
-                    nodeRef   = fileFolderService.create(target, nodeName, metadata.getType()).getNodeRef();
-                    nodeState = NodeState.CREATED;
-                }
-                catch (final FileExistsException fee)
-                {
-                    if (log.isWarnEnabled()) log.warn("Node with name '" + nodeName + "' within node '" + target.toString() + "' was created concurrently to the bulk import.  Skipping importing it.", fee);
-                    nodeRef   = null;
-                    nodeState = NodeState.SKIPPED;
-                }
+                if (log.isDebugEnabled()) log.debug("Creating new node of type '" + metadata.getType().toString() + "' with name '" + nodeName + "' within node '" + target.toString() + "'.");
+                nodeRef   = fileFolderService.create(target, nodeName, metadata.getType()).getNodeRef();
+                nodeState = NodeState.CREATED;
             }
-            else
+            catch (final FileExistsException fee)
             {
-                if (log.isDebugEnabled()) log.debug("Skipping creation of new node '" + nodeName + "' within node '" + target.toString() + "' since it doesn't have a content file.");
+                if (log.isWarnEnabled()) log.warn("Node with name '" + nodeName + "' within node '" + target.toString() + "' was created concurrently to the bulk import.  Skipping importing it.", fee);
                 nodeRef   = null;
                 nodeState = NodeState.SKIPPED;
             }
@@ -559,7 +543,7 @@ public abstract class AbstractBulkFilesystemImporter
                 if (importableItem.getHeadRevision().contentFileExists())
                 {
                     // If the source file exists, ensure that the target node is of the same type (i.e. file or folder) as it. 
-                    isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getHeadRevision().getContentFileType());
+                    isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getFileType());
                 
                     if (isDirectory != targetNodeIsSpace)
                     {
@@ -611,7 +595,7 @@ public abstract class AbstractBulkFilesystemImporter
             // If cm:versionable isn't listed as one of the aspects for this node, add it - cm:versionable is required for nodes that have versions
             if (!metadata.getAspects().contains(ContentModel.ASPECT_VERSIONABLE))
             {
-                if (log.isWarnEnabled()) log.warn("Metadata for file '" + getFileName(importableItem.getHeadRevision().getContentFile()) + "' was missing the cm:versionable aspect, yet it has " + importableItem.getVersionEntries().size() + " versions.  Adding cm:versionable.");
+                if (log.isInfoEnabled()) log.info("Metadata for file '" + getFileName(importableItem.getHeadRevision().getContentFile()) + "' was missing the cm:versionable aspect, yet it has " + importableItem.getVersionEntries().size() + " versions.  Adding cm:versionable aspect.");
                 metadata.addAspect(ContentModel.ASPECT_VERSIONABLE);
             }
                     
@@ -636,7 +620,7 @@ public abstract class AbstractBulkFilesystemImporter
         for (final ImportableItem.VersionedContentAndMetadata versionEntry : importableItem.getVersionEntries())
         {
             Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
-            MetadataLoader.Metadata   metadata          = loadMetadata(versionEntry);
+            MetadataLoader.Metadata   metadata          = loadMetadata(importableItem.getFileType(), versionEntry);
             
             importContentAndMetadata(nodeRef, versionEntry, inPlaceImport, metadata);
 
@@ -672,33 +656,41 @@ public abstract class AbstractBulkFilesystemImporter
                                                 final MetadataLoader.Metadata           metadata)
     {
         // Write the content of the file
-        if (contentAndMetadata.contentFileExists())
+        if (contentAndMetadata.contentFileExists() ||
+            contentAndMetadata.metadataFileExists())
         {
-            importStatus.setCurrentFileBeingProcessed(getFileName(contentAndMetadata.getContentFile()));
-            
-            if (inPlaceImport)
+            if (contentAndMetadata.contentFileExists())
             {
-                // It's already in a content store, so simply "link" it into the repository
-                if (log.isDebugEnabled()) log.debug("Linking ContentStore file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
+                importStatus.setCurrentFileBeingProcessed(getFileName(contentAndMetadata.getContentFile()));
                 
-                metadata.addProperty(ContentModel.PROP_CONTENT, buildContentProperty(contentAndMetadata));
+                if (inPlaceImport)
+                {
+                    // It's already in a content store, so simply "link" it into the repository
+                    if (log.isDebugEnabled()) log.debug("Linking ContentStore file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
+                    
+                    metadata.addProperty(ContentModel.PROP_CONTENT, buildContentProperty(contentAndMetadata));
+                }
+                else
+                {
+                    // File is outside a content store, so stream it into the repository
+                    if (log.isDebugEnabled()) log.debug("Streaming contents of file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
+                    
+                    ContentWriter writer = fileFolderService.getWriter(nodeRef);
+                    writer.putContent(contentAndMetadata.getContentFile());
+                }
             }
             else
             {
-                // File is outside a content store, so stream it into the repository
-                if (log.isDebugEnabled()) log.debug("Streaming contents of file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
-                
-                ContentWriter writer = fileFolderService.getWriter(nodeRef);
-                writer.putContent(contentAndMetadata.getContentFile());
+                if (log.isDebugEnabled()) log.debug("No content to stream into node '" + nodeRef.toString() + "' - importing metadata only.");
             }
+            
+            // Attach aspects and set all properties
+            importImportableItemMetadata(nodeRef, contentAndMetadata.getContentFile(), metadata);
         }
         else
         {
-            if (log.isDebugEnabled()) log.debug("No content to stream into node '" + nodeRef.toString() + "' - importing metadata only.");
+            if (log.isDebugEnabled()) log.debug("No content or metadata to write to node '" + nodeRef.toString() + "' - skipping.");
         }
-        
-        // Attach aspects and set all properties
-        importImportableItemMetadata(nodeRef, contentAndMetadata.getContentFile(), metadata);
     }
     
     
@@ -896,18 +888,20 @@ public abstract class AbstractBulkFilesystemImporter
     }
     
     
-    private final MetadataLoader.Metadata loadMetadata(final ImportableItem.ContentAndMetadata contentAndMetadata)
+    private final MetadataLoader.Metadata loadMetadata(final ImportableItem.FileType           fileType,
+                                                       final ImportableItem.ContentAndMetadata contentAndMetadata)
     {
         MetadataLoader.Metadata result = new MetadataLoader.Metadata();
-        
-        // Load "standard" metadata from the filesystem
+
+        result.setType(ImportableItem.FileType.FILE.equals(fileType) ? ContentModel.TYPE_CONTENT : ContentModel.TYPE_FOLDER);
+
+        // Load "standard" metadata from the filesystem, if a content file exists
         if (contentAndMetadata != null && contentAndMetadata.contentFileExists())
         {
             final String filename = contentAndMetadata.getContentFile().getName().trim().replaceFirst(DirectoryAnalyser.VERSION_SUFFIX_REGEX, "");  // Strip off the version suffix (if any)
             final Date   modified = new Date(contentAndMetadata.getContentFile().lastModified());
-            final Date   created  = modified;    //TODO: determine proper file creation time (awaiting JDK 1.7 NIO2 library)
+            final Date   created  = modified;    // TODO: determine proper file creation time (awaiting JDK 1.7 NIO2 library)
             
-            result.setType(ImportableItem.FileType.FILE.equals(contentAndMetadata.getContentFileType()) ? ContentModel.TYPE_CONTENT : ContentModel.TYPE_FOLDER);
             result.addProperty(ContentModel.PROP_NAME,     filename);
             result.addProperty(ContentModel.PROP_TITLE,    filename);
             result.addProperty(ContentModel.PROP_CREATED,  created);
@@ -972,7 +966,7 @@ public abstract class AbstractBulkFilesystemImporter
      * Returns the name of the given importable item.  This is the final name of the item, as it would appear in the repository,
      * after metadata renames are taken into account.
      * 
-     * @param importableItem The importableItem with which to 
+     * @param importableItem The importableItem whose name we want to retrieve. 
      * @param metadata 
      * @return
      */
@@ -1001,6 +995,14 @@ public abstract class AbstractBulkFilesystemImporter
                                                        (MetadataLoader.METADATA_SUFFIX.length() + metadataLoader.getMetadataFileExtension().length()));
             }
         }
+        
+        // Step 3: read the parent filename from the item itself
+        if (result == null)
+        {
+            result = importableItem.getParentFilename();
+        }
+        
+        // ####TODO: TAKE METADATA RENAMES IN VERSION HISTORY ONLY ITEMS INTO ACCOUNT!!
                 
         return(result);
     }

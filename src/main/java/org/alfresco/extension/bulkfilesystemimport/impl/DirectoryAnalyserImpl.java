@@ -83,8 +83,8 @@ public final class DirectoryAnalyserImpl
         end = System.nanoTime();
         if (log.isTraceEnabled()) log.trace("List directory took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
 
-        start = System.nanoTime();
         // Build up the list of ImportableItems from the directory listing
+        start = System.nanoTime();
         for (final File file : result.originalListing)
         {
             if (file.canRead())
@@ -125,9 +125,8 @@ public final class DirectoryAnalyserImpl
 
         result.importableItems = new ArrayList<ImportableItem>(importableItems.values());
 
+        // Finally, remove any items from the list that aren't valid
         start = System.nanoTime();
-        // Finally, remove any items from the list that aren't valid (don't have either a
-        // contentFile or a metadataFile)
         Iterator<ImportableItem> iter = result.importableItems.iterator();
 
         while (iter.hasNext())
@@ -227,7 +226,7 @@ public final class DirectoryAnalyserImpl
         // We didn't find it, so create it
         if (result == null)
         {
-            result = new ImportableItem();
+            result = new ImportableItem(contentFile.getName());
             result.getHeadRevision().setContentFile(contentFile);
             importableItems.put(contentFile, result);
         }
