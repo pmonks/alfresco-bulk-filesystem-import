@@ -212,7 +212,7 @@ public final class ImportableItem
                     contentFileIsReadable = contentFile.canRead();
                     contentFileSize       = contentFile.length();
                     contentFileModified   = new Date(contentFile.lastModified());
-                    contentFileCreated    = contentFileModified;    //TODO: determine proper file creation time (awaiting JDK 1.7 NIO2 library)
+                    contentFileCreated    = contentFileModified;    // TODO: determine proper file creation time (awaiting JDK 1.7 NIO2 library)
                     
                     if (contentFile.isFile())
                     {
