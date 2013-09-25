@@ -176,7 +176,7 @@ public final class ImportableItem
     {
         return(new ToStringBuilder(this)
                .append("headRevision", headRevision)
-               .append("versions", versionEntries)
+               .append("versions",     versionEntries)
                .toString());
     }
     
@@ -185,7 +185,7 @@ public final class ImportableItem
         private File     contentFile           = null;
         private boolean  contentFileExists     = false;
         private boolean  contentFileIsReadable = false;
-        private FileType contentFileType       = null;
+        private FileType contentFileType       = FileType.UNKNOWN;
         private long     contentFileSize       = -1;
         private Date     contentFileCreated    = null;
         private Date     contentFileModified   = null;
@@ -242,7 +242,7 @@ public final class ImportableItem
         
         public final FileType getContentFileType()
         {
-            return(contentFileExists() ? contentFileType : FileType.UNKNOWN);
+            return(contentFileType);
         }
         
         public final long getContentFileSize()

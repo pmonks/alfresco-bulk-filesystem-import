@@ -47,7 +47,6 @@ import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransacti
 import org.alfresco.repo.version.VersionModel;
 import org.alfresco.service.ServiceRegistry;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
-import org.alfresco.service.cmr.model.FileExistsException;
 import org.alfresco.service.cmr.model.FileFolderService;
 import org.alfresco.service.cmr.model.FileInfo;
 import org.alfresco.service.cmr.model.FileNotFoundException;
@@ -62,7 +61,6 @@ import org.alfresco.service.cmr.security.AccessStatus;
 import org.alfresco.service.cmr.security.PermissionService;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
-import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
 import org.alfresco.extension.bulkfilesystemimport.AnalysedDirectory;
@@ -170,10 +168,7 @@ public abstract class AbstractBulkFilesystemImporter
         validateNodeRefIsWritableSpace(target);
         validateFileIsReadableDirectory(source);
         
-        if (log.isDebugEnabled())
-        {
-            log.debug("---- Data Dictionary:\n" + dataDictionaryBuilder.toString());
-        }
+        if (log.isDebugEnabled()) log.debug("---- Data Dictionary:\n" + dataDictionaryBuilder.toString());
         
         bulkImportImpl(target, source, replaceExisting, isInContentStore(source));
     }
@@ -516,7 +511,7 @@ public abstract class AbstractBulkFilesystemImporter
         NodeState                           nodeState        = replaceExisting ? NodeState.REPLACED : NodeState.SKIPPED;
         String                              nodeName         = getImportableItemName(importableItem, metadata);
         NodeRef                             nodeRef          = null;
-        QName                               childQName       = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, QName.createValidLocalName(nodeName));
+        QName                               childQName       = QName.createQName(metadata.getNamespace(), QName.createValidLocalName(nodeName));
         QName                               parentAssocQName = metadata.getParentAssoc();
         
         if (log.isDebugEnabled()) log.debug("Searching for node with name '" + nodeName + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "'.");
@@ -527,18 +522,9 @@ public abstract class AbstractBulkFilesystemImporter
         {
             isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getFileType());
             
-            try
-            {
-                if (log.isDebugEnabled()) log.debug("Creating new node of type '" + metadata.getType().toString() + "' with name '" + nodeName + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "'.");
-                nodeRef   = nodeService.createNode(target, parentAssocQName, childQName, metadata.getType()).getChildRef();
-                nodeState = NodeState.CREATED;
-            }
-            catch (final FileExistsException fee)
-            {
-                if (log.isWarnEnabled()) log.warn("Node with name '" + nodeName + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "' was created concurrently to the bulk import.  Skipping importing it.", fee);
-                nodeRef   = null;
-                nodeState = NodeState.SKIPPED;
-            }
+            if (log.isDebugEnabled()) log.debug("Creating new node of type '" + String.valueOf(metadata.getType()) + "' with qname '" + String.valueOf(childQName) + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "'.");
+            nodeRef   = nodeService.createNode(target, parentAssocQName, childQName, metadata.getType()).getChildRef();
+            nodeState = NodeState.CREATED;
         }
         // We found the node in the repository.  Make sure we return the NodeRef, so that recursive loading works (we need the NodeRef of all sub-spaces, even if we didn't create them).
         else
@@ -570,7 +556,7 @@ public abstract class AbstractBulkFilesystemImporter
                     if (metadata.getType() != null)
                     {
                         // Finally, specialise the type.
-                        if (log.isDebugEnabled()) log.debug("Specialising type of node '" + nodeRef.toString() + "' to '" + String.valueOf(metadata.getType()) + "'.");
+                        if (log.isDebugEnabled()) log.debug("Specialising type of node '" + String.valueOf(nodeRef) + "' to '" + String.valueOf(metadata.getType()) + "'.");
                         nodeService.setType(nodeRef, metadata.getType());
                     }
                     
@@ -579,7 +565,7 @@ public abstract class AbstractBulkFilesystemImporter
             }
             else
             {
-                if (log.isDebugEnabled()) log.debug("Found content node '" + nodeRef.toString() + "', but replaceExisting=false, so skipping it.");
+                if (log.isDebugEnabled()) log.debug("Found content node '" + String.valueOf(nodeRef) + "', but replaceExisting=false, so skipping it.");
                 nodeState = NodeState.SKIPPED;
             }
         }
@@ -609,7 +595,7 @@ public abstract class AbstractBulkFilesystemImporter
             result = importContentVersions(nodeRef, importableItem, inPlaceImport);
         }
         
-        if (log.isDebugEnabled()) log.debug("Creating head revision of node " + nodeRef.toString());
+        if (log.isDebugEnabled()) log.debug("Creating head revision of node " + String.valueOf(nodeRef));
         
         importContentAndMetadata(nodeRef, importableItem.getHeadRevision(), inPlaceImport, metadata);
         
@@ -631,7 +617,7 @@ public abstract class AbstractBulkFilesystemImporter
             
             importContentAndMetadata(nodeRef, versionEntry, inPlaceImport, metadata);
 
-            if (log.isDebugEnabled()) log.debug("Creating v" + String.valueOf(versionEntry.getVersionLabel()) + " of node '" + nodeRef.toString() + "' (note: version label in Alfresco will not be the same - it is not currently possible to explicitly force a particular version label - see https://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=85).");
+            if (log.isDebugEnabled()) log.debug("Creating v" + String.valueOf(versionEntry.getVersionLabel()) + " of node '" + String.valueOf(nodeRef) + "' (note: version label in Alfresco will not be the same - it is not currently possible to explicitly force a particular version label - see https://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=85).");
   
             // Note: PROP_VERSION_LABEL is a "reserved" property, and cannot be modified by custom code.
             // In other words, we can't use the version label on disk as the version label in Alfresco.  :-(
@@ -673,14 +659,14 @@ public abstract class AbstractBulkFilesystemImporter
                 if (inPlaceImport)
                 {
                     // It's already in a content store, so simply "link" it into the repository
-                    if (log.isDebugEnabled()) log.debug("Linking ContentStore file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
+                    if (log.isDebugEnabled()) log.debug("Linking ContentStore file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + String.valueOf(nodeRef) + "'.");
                     
                     metadata.addProperty(ContentModel.PROP_CONTENT, buildContentProperty(contentAndMetadata));
                 }
                 else
                 {
                     // File is outside a content store, so stream it into the repository
-                    if (log.isDebugEnabled()) log.debug("Streaming contents of file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
+                    if (log.isDebugEnabled()) log.debug("Streaming contents of file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + String.valueOf(nodeRef) + "'.");
   
                     ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT, true);
                     writer.putContent(contentAndMetadata.getContentFile());
@@ -688,7 +674,7 @@ public abstract class AbstractBulkFilesystemImporter
             }
             else
             {
-                if (log.isDebugEnabled()) log.debug("No content to stream into node '" + nodeRef.toString() + "' - importing metadata only.");
+                if (log.isDebugEnabled()) log.debug("No content to stream into node '" + String.valueOf(nodeRef) + "' - importing metadata only.");
             }
             
             // Attach aspects and set all properties
@@ -696,7 +682,7 @@ public abstract class AbstractBulkFilesystemImporter
         }
         else
         {
-            if (log.isDebugEnabled()) log.debug("No content or metadata to write to node '" + nodeRef.toString() + "' - skipping.");
+            if (log.isDebugEnabled()) log.debug("No content or metadata to write to node '" + String.valueOf(nodeRef) + "' - skipping.");
         }
     }
     
@@ -745,7 +731,7 @@ public abstract class AbstractBulkFilesystemImporter
         {
             for (final QName aspect : metadata.getAspects())
             {
-                if (log.isDebugEnabled()) log.debug("Attaching aspect '" + aspect.toString() + "' to node '" + nodeRef.toString() + "'.");
+                if (log.isDebugEnabled()) log.debug("Attaching aspect '" + String.valueOf(aspect) + "' to node '" + String.valueOf(nodeRef) + "'.");
                 
                 nodeService.addAspect(nodeRef, aspect, null);  // Note: we set the aspect's properties separately, hence null for the third parameter
             }
@@ -754,7 +740,7 @@ public abstract class AbstractBulkFilesystemImporter
         // Set property values for both the type and any aspect(s)
         if (metadata.getProperties() != null)
         {
-            if (log.isDebugEnabled()) log.debug("Adding properties to node '" + nodeRef.toString() + "':\n" + mapToString(metadata.getProperties()));
+            if (log.isDebugEnabled()) log.debug("Adding properties to node '" + String.valueOf(nodeRef) + "':\n" + mapToString(metadata.getProperties()));
             
             try
             {
@@ -792,17 +778,17 @@ public abstract class AbstractBulkFilesystemImporter
         
         if (!nodeService.exists(target))
         {
-            throw new RuntimeException("Target '" + target.toString() + "' doesn't exist.");
+            throw new RuntimeException("Target '" + String.valueOf(target) + "' doesn't exist.");
         }
         
         if (AccessStatus.DENIED.equals(permissionService.hasPermission(target, PermissionService.ADD_CHILDREN)))
         {
-            throw new RuntimeException("Target '" + target.toString() + "' is not writeable.");
+            throw new RuntimeException("Target '" + String.valueOf(target) + "' is not writeable.");
         }
         
         if (!dictionaryService.isSubClass(nodeService.getType(target), ContentModel.TYPE_FOLDER))
         {
-            throw new RuntimeException("Target '" + target.toString() + "' is not a space.");
+            throw new RuntimeException("Target '" + String.valueOf(target) + "' is not a space.");
         }
     }
     
@@ -870,7 +856,7 @@ public abstract class AbstractBulkFilesystemImporter
             
             try
             {
-                pathElements = fileFolderService.getNamePath(null, nodeRef);   // Note: violates fix for issue #132, but allowable in this case since this is a R/O method without an obvious alternative
+                pathElements = fileFolderService.getNamePath(null, nodeRef);   // Note: violates issue #132, but allowable in this case since this is a R/O method without an obvious alternative
 
                 if (pathElements != null && pathElements.size() > 0)
                 {

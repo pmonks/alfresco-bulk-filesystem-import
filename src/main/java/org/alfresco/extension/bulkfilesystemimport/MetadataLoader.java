@@ -26,6 +26,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.alfresco.model.ContentModel;
+import org.alfresco.service.cmr.dictionary.NamespaceDefinition;
+import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.apache.commons.lang.builder.ToStringBuilder;
 
@@ -69,16 +72,18 @@ public interface MetadataLoader
     public final class Metadata
     {
         private QName                    type;
-        private QName                    parentAssoc;
         private Set<QName>               aspects;
+        private String                   namespace;
+        private QName                    parentAssoc;
         private Map<QName, Serializable> properties;
         
         
         public Metadata()
         {
             type        = null;
-            parentAssoc = null;
             aspects     = new HashSet<QName>();
+            namespace   = NamespaceService.CONTENT_MODEL_1_0_URI;
+            parentAssoc = ContentModel.ASSOC_CONTAINS;
             properties  = new HashMap<QName, Serializable>(); 
         }
         
@@ -106,28 +111,6 @@ public interface MetadataLoader
         
         
         /**
-         * @return The parent association type.
-         */
-        public QName getParentAssoc()
-        {
-            return(parentAssoc);
-        }
-        
-        
-        /**
-         * @param parentAssoc The parent association type to set in this metadata object <i>(must not be null)</i>.
-         */
-        public void setParentAssoc(final QName parentAssoc)
-        {
-            // PRECONDITIONS
-            assert parentAssoc != null : "parentAssoc must not be null.";
-            
-            // Body
-            this.parentAssoc = parentAssoc;
-        }
-
-        
-        /**
          * @return The set of aspects in this metadata object <i>(will not be null, but may be empty)</i>.
          */
         public Set<QName> getAspects()
@@ -149,6 +132,49 @@ public interface MetadataLoader
         }
         
 
+        /**
+         * @return the namespace
+         */
+        public String getNamespace()
+        {
+            return namespace;
+        }
+
+
+        /**
+         * @param namespace The namespace to set in this metadata object <i>(must not be null)</i>.
+         */
+        public void setNamespace(final String namespace)
+        {
+            // PRECONDITIONS
+            assert namespace != null : "namespace must not be null.";
+            
+            this.namespace = namespace;
+        }
+
+
+        /**
+         * @return The parent association type.
+         */
+        public QName getParentAssoc()
+        {
+            return(parentAssoc);
+        }
+        
+        
+        /**
+         * @param parentAssoc The parent association type to set in this metadata object <i>(must not be null)</i>.
+         */
+        public void setParentAssoc(final QName parentAssoc)
+        {
+            // PRECONDITIONS
+            assert parentAssoc != null : "parentAssoc must not be null.";
+            
+            // Body
+            this.parentAssoc = parentAssoc;
+        }
+
+        
         /**
          * @return The properties in this metadata object <i>(will not be null, but may be empty)</i>.
          */

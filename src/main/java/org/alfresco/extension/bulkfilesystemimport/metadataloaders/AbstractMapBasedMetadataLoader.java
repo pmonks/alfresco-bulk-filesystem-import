@@ -53,10 +53,9 @@ abstract class AbstractMapBasedMetadataLoader
     
     private final static String PROPERTY_NAME_TYPE         = "type";
     private final static String PROPERTY_NAME_ASPECTS      = "aspects";
-    private final static String PROPERTY_NAME_PARENT_ASSOC = "parentAssoc";
+    private final static String PROPERTY_NAME_NAMESPACE    = "namespace";
+    private final static String PROPERTY_NAME_PARENT_ASSOC = "parentAssociation";
 
-    private final static QName DATATYPE_CONTENT = QName.createQName("d:content");
-    
     private final static String DEFAULT_MULTI_VALUED_SEPARATOR = ",";
     
     protected final NamespaceService  namespaceService;
@@ -138,6 +137,10 @@ abstract class AbstractMapBasedMetadataLoader
                                 QName aspect = QName.createQName(aspectName.trim(), namespaceService);
                                 metadata.addAspect(aspect);
                             }
+                        }
+                        else if (PROPERTY_NAME_NAMESPACE.equals(key))
+                        {
+                            metadata.setNamespace((String)metadataProperties.get(key));
                         }
                         else if (PROPERTY_NAME_PARENT_ASSOC.equals(key))
                         {
