@@ -51,8 +51,11 @@ abstract class AbstractMapBasedMetadataLoader
 {
     private final static Log log = LogFactory.getLog(AbstractMapBasedMetadataLoader.class);
     
-    private final static String PROPERTY_NAME_TYPE    = "type";
-    private final static String PROPERTY_NAME_ASPECTS = "aspects";
+    private final static String PROPERTY_NAME_TYPE         = "type";
+    private final static String PROPERTY_NAME_ASPECTS      = "aspects";
+    private final static String PROPERTY_NAME_PARENT_ASSOC = "parentAssoc";
+
+    private final static QName DATATYPE_CONTENT = QName.createQName("d:content");
     
     private final static String DEFAULT_MULTI_VALUED_SEPARATOR = ",";
     
@@ -136,9 +139,16 @@ abstract class AbstractMapBasedMetadataLoader
                                 metadata.addAspect(aspect);
                             }
                         }
+                        else if (PROPERTY_NAME_PARENT_ASSOC.equals(key))
+                        {
+                            String parentAssocName = (String)metadataProperties.get(key);
+                            QName  parentAssoc     = QName.createQName(parentAssocName, namespaceService);
+                            
+                            metadata.setParentAssoc(parentAssoc);
+                        }
                         else  // Any other key => property
                         {
-                            //####TODO: figure out how to handle properties of type cm:content - they need to be streamed in via a Writer 
+                            //####TODO: Issue #62: figure out how to handle properties of type cm:content - they need to be streamed in via a Writer
                         	QName              name               = QName.createQName(key, namespaceService);
                         	PropertyDefinition propertyDefinition = dictionaryService.getProperty(name);  // TODO: measure performance impact of this API call!!
                         	

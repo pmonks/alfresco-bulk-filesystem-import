@@ -175,8 +175,8 @@ public final class ImportableItem
     public String toString()
     {
         return(new ToStringBuilder(this)
-               .append("HeadRevision", headRevision)
-               .append("Versions", versionEntries)
+               .append("headRevision", headRevision)
+               .append("versions", versionEntries)
                .toString());
     }
     
@@ -306,7 +306,7 @@ public final class ImportableItem
         
         public final int weight()
         {
-            return((contentFile   == null || !contentFileExists ? 0 : 1) +
+            return((contentFile  == null || !contentFileExists ? 0 : 1) +
                    (metadataFile == null ? 0 : 1));
         }
 
@@ -314,8 +314,8 @@ public final class ImportableItem
         public String toString()
         {
             return(new ToStringBuilder(this)
-                   .append("contentFile", (contentFileExists ? contentFile : null))
-                   .append("metadatafile", metadataFile)
+                   .append("contentFile",  (contentFileExists    ? contentFile.getAbsolutePath()  : null))
+                   .append("metadatafile", (metadataFile != null ? metadataFile.getAbsolutePath() : null))
                    .toString());
         }
     }

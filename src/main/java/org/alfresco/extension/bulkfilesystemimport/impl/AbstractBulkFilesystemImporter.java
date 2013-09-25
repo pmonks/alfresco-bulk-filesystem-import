@@ -36,7 +36,6 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
@@ -47,11 +46,13 @@ import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
 import org.alfresco.service.ServiceRegistry;
+import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.model.FileExistsException;
 import org.alfresco.service.cmr.model.FileFolderService;
 import org.alfresco.service.cmr.model.FileInfo;
 import org.alfresco.service.cmr.model.FileNotFoundException;
 import org.alfresco.service.cmr.repository.ContentData;
+import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.alfresco.service.cmr.repository.InvalidNodeRefException;
 import org.alfresco.service.cmr.repository.MimetypeService;
@@ -61,9 +62,9 @@ import org.alfresco.service.cmr.security.AccessStatus;
 import org.alfresco.service.cmr.security.PermissionService;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
+import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
-
 import org.alfresco.extension.bulkfilesystemimport.AnalysedDirectory;
 import org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter;
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
@@ -96,8 +97,10 @@ public abstract class AbstractBulkFilesystemImporter
     protected final ContentStore         configuredContentStore;
     protected final FileFolderService    fileFolderService;
     protected final NodeService          nodeService;
+    protected final ContentService       contentService;
     protected final VersionService       versionService;
     protected final MimetypeService      mimeTypeService;
+    protected final DictionaryService    dictionaryService;
     
     protected final BulkImportStatusImpl  importStatus;
     protected final DataDictionaryBuilder dataDictionaryBuilder;
@@ -120,8 +123,10 @@ public abstract class AbstractBulkFilesystemImporter
         
         this.fileFolderService = serviceRegistry.getFileFolderService();
         this.nodeService       = serviceRegistry.getNodeService();
+        this.contentService    = serviceRegistry.getContentService();
         this.versionService    = serviceRegistry.getVersionService();
         this.mimeTypeService   = serviceRegistry.getMimetypeService();
+        this.dictionaryService = serviceRegistry.getDictionaryService();
         
         this.importStatus      = importStatus;
         
@@ -506,14 +511,16 @@ public abstract class AbstractBulkFilesystemImporter
                                                                        final boolean                 replaceExisting,
                                                                        final MetadataLoader.Metadata metadata)
     {
-        Triple<NodeRef, Boolean, NodeState> result      = null;
-        boolean                             isDirectory = false;
-        NodeState                           nodeState   = replaceExisting ? NodeState.REPLACED : NodeState.SKIPPED;
-        String                              nodeName    = getImportableItemName(importableItem, metadata);
-        NodeRef                             nodeRef     = null;
+        Triple<NodeRef, Boolean, NodeState> result           = null;
+        boolean                             isDirectory      = false;
+        NodeState                           nodeState        = replaceExisting ? NodeState.REPLACED : NodeState.SKIPPED;
+        String                              nodeName         = getImportableItemName(importableItem, metadata);
+        NodeRef                             nodeRef          = null;
+        QName                               childQName       = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, QName.createValidLocalName(nodeName));
+        QName                               parentAssocQName = metadata.getParentAssoc();
         
-        if (log.isDebugEnabled()) log.debug("Searching for node with name '" + nodeName + "' within node '" + target.toString() + "'.");
-        nodeRef = fileFolderService.searchSimple(target, nodeName);
+        if (log.isDebugEnabled()) log.debug("Searching for node with name '" + nodeName + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "'.");
+        nodeRef = nodeService.getChildByName(target, parentAssocQName, nodeName);
         
         // If we didn't find an existing item, create a new node in the repo. 
         if (nodeRef == null)
@@ -522,13 +529,13 @@ public abstract class AbstractBulkFilesystemImporter
             
             try
             {
-                if (log.isDebugEnabled()) log.debug("Creating new node of type '" + metadata.getType().toString() + "' with name '" + nodeName + "' within node '" + target.toString() + "'.");
-                nodeRef   = fileFolderService.create(target, nodeName, metadata.getType()).getNodeRef();
+                if (log.isDebugEnabled()) log.debug("Creating new node of type '" + metadata.getType().toString() + "' with name '" + nodeName + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "'.");
+                nodeRef   = nodeService.createNode(target, parentAssocQName, childQName, metadata.getType()).getChildRef();
                 nodeState = NodeState.CREATED;
             }
             catch (final FileExistsException fee)
             {
-                if (log.isWarnEnabled()) log.warn("Node with name '" + nodeName + "' within node '" + target.toString() + "' was created concurrently to the bulk import.  Skipping importing it.", fee);
+                if (log.isWarnEnabled()) log.warn("Node with name '" + nodeName + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "' was created concurrently to the bulk import.  Skipping importing it.", fee);
                 nodeRef   = null;
                 nodeState = NodeState.SKIPPED;
             }
@@ -538,7 +545,7 @@ public abstract class AbstractBulkFilesystemImporter
         {
             if (replaceExisting)
             {
-                boolean targetNodeIsSpace = fileFolderService.getFileInfo(nodeRef).isFolder();
+                boolean targetNodeIsSpace = dictionaryService.isSubClass(nodeService.getType(nodeRef), ContentModel.TYPE_FOLDER);
                 
                 if (importableItem.getHeadRevision().contentFileExists())
                 {
@@ -674,8 +681,8 @@ public abstract class AbstractBulkFilesystemImporter
                 {
                     // File is outside a content store, so stream it into the repository
                     if (log.isDebugEnabled()) log.debug("Streaming contents of file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
-                    
-                    ContentWriter writer = fileFolderService.getWriter(nodeRef);
+  
+                    ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT, true);
                     writer.putContent(contentAndMetadata.getContentFile());
                 }
             }
@@ -783,7 +790,7 @@ public abstract class AbstractBulkFilesystemImporter
             throw new RuntimeException("target must not be null.");
         }
         
-        if (!fileFolderService.exists(target))
+        if (!nodeService.exists(target))
         {
             throw new RuntimeException("Target '" + target.toString() + "' doesn't exist.");
         }
@@ -793,7 +800,7 @@ public abstract class AbstractBulkFilesystemImporter
             throw new RuntimeException("Target '" + target.toString() + "' is not writeable.");
         }
         
-        if (!fileFolderService.getFileInfo(target).isFolder())
+        if (!dictionaryService.isSubClass(nodeService.getType(target), ContentModel.TYPE_FOLDER))
         {
             throw new RuntimeException("Target '" + target.toString() + "' is not a space.");
         }
@@ -863,7 +870,7 @@ public abstract class AbstractBulkFilesystemImporter
             
             try
             {
-                pathElements = fileFolderService.getNamePath(null, nodeRef);
+                pathElements = fileFolderService.getNamePath(null, nodeRef);   // Note: violates fix for issue #132, but allowable in this case since this is a R/O method without an obvious alternative
 
                 if (pathElements != null && pathElements.size() > 0)
                 {
@@ -894,6 +901,7 @@ public abstract class AbstractBulkFilesystemImporter
         MetadataLoader.Metadata result = new MetadataLoader.Metadata();
 
         result.setType(ImportableItem.FileType.DIRECTORY.equals(fileType) ? ContentModel.TYPE_FOLDER : ContentModel.TYPE_CONTENT);  // Default to content (file)
+        result.setParentAssoc(ContentModel.ASSOC_CONTAINS);  // Default to cm:contains child association
 
         // Load "standard" metadata from the filesystem, if a content file exists
         if (contentAndMetadata != null && contentAndMetadata.contentFileExists())
@@ -973,6 +981,8 @@ public abstract class AbstractBulkFilesystemImporter
     protected final String getImportableItemName(final ImportableItem importableItem, final MetadataLoader.Metadata metadata)
     {
         String result = null;
+        
+        if (log.isDebugEnabled()) log.debug("Determining name of importable item:\n" + String.valueOf(importableItem) + "\n\nWith metadata:\n" + String.valueOf(metadata));
 
         // Step 1: attempt to get name from metadata
         if (metadata != null)
@@ -1001,6 +1011,8 @@ public abstract class AbstractBulkFilesystemImporter
         {
             result = importableItem.getParentFilename();
         }
+        
+        if (log.isDebugEnabled()) log.debug("Name is: " + result);
         
         // ####TODO: TAKE METADATA RENAMES IN VERSION HISTORY ONLY ITEMS INTO ACCOUNT!!
                 

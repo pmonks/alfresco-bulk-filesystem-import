@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.alfresco.service.namespace.QName;
+import org.apache.commons.lang.builder.ToStringBuilder;
 
 
 /**
@@ -68,15 +69,17 @@ public interface MetadataLoader
     public final class Metadata
     {
         private QName                    type;
+        private QName                    parentAssoc;
         private Set<QName>               aspects;
         private Map<QName, Serializable> properties;
         
         
         public Metadata()
         {
-            this.type  = null;
-            aspects    = new HashSet<QName>();
-            properties = new HashMap<QName, Serializable>(); 
+            type        = null;
+            parentAssoc = null;
+            aspects     = new HashSet<QName>();
+            properties  = new HashMap<QName, Serializable>(); 
         }
         
 
@@ -99,6 +102,28 @@ public interface MetadataLoader
             
             // Body
             this.type = type;
+        }
+        
+        
+        /**
+         * @return The parent association type.
+         */
+        public QName getParentAssoc()
+        {
+            return(parentAssoc);
+        }
+        
+        
+        /**
+         * @param parentAssoc The parent association type to set in this metadata object <i>(must not be null)</i>.
+         */
+        public void setParentAssoc(final QName parentAssoc)
+        {
+            // PRECONDITIONS
+            assert parentAssoc != null : "parentAssoc must not be null.";
+            
+            // Body
+            this.parentAssoc = parentAssoc;
         }
 
         
@@ -146,6 +171,18 @@ public interface MetadataLoader
             
             // Body
             properties.put(property, value);
+        }
+        
+        
+        @Override
+        public String toString()
+        {
+            return(new ToStringBuilder(this)
+                   .append("type",        type)
+                   .append("parentAssoc", parentAssoc)
+                   .append("aspects",     aspects)
+                   .append("properties",  properties)
+                   .toString());
         }
         
     }
