@@ -36,6 +36,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
@@ -63,6 +64,7 @@ import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
+
 import org.alfresco.extension.bulkfilesystemimport.AnalysedDirectory;
 import org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter;
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
@@ -669,6 +671,8 @@ public abstract class AbstractBulkFilesystemImporter
                     if (log.isDebugEnabled()) log.debug("Streaming contents of file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + String.valueOf(nodeRef) + "'.");
   
                     ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT, true);
+                    writer.guessMimetype(contentAndMetadata.getParentFileName());  // Note: we base the MIME type on the name of the parent file, since the tool doesn't (yet) support a version history of content files with heterogeneous MIME types (since that would break the filename naming convention used to associate versions to parent files).
+                    writer.guessEncoding();
                     writer.putContent(contentAndMetadata.getContentFile());
                 }
             }

@@ -193,6 +193,12 @@ public final class ImportableItem
         private long     metadataFileSize      = -1;
 
         
+        
+        public final String getParentFileName()
+        {
+            return(parentFilename);
+        }
+        
         public final File getContentFile()
         {
             return(contentFile);
