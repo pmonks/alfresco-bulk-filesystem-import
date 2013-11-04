@@ -32,7 +32,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.alfresco.extension.bulkfilesystemimport.AnalysedDirectory;
 import org.alfresco.extension.bulkfilesystemimport.DirectoryAnalyser;
 import org.alfresco.extension.bulkfilesystemimport.ImportableItem;
@@ -70,6 +69,7 @@ public final class DirectoryAnalyserImpl
      * @see org.alfresco.extension.bulkfilesystemimport.DirectoryAnalyser#analyseDirectory(java.io.File)
      */
     public AnalysedDirectory analyseDirectory(final File directory)
+        throws InterruptedException
     {
         final AnalysedDirectory        result          = new AnalysedDirectory();
         final Map<File,ImportableItem> importableItems = new HashMap<File,ImportableItem>();
@@ -87,6 +87,8 @@ public final class DirectoryAnalyserImpl
         start = System.nanoTime();
         for (final File file : result.originalListing)
         {
+            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
+            
             if (file.canRead())
             {
                 if (isVersionFile(file))

@@ -36,7 +36,6 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
@@ -64,7 +63,6 @@ import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
-
 import org.alfresco.extension.bulkfilesystemimport.AnalysedDirectory;
 import org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter;
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
@@ -287,6 +285,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                               final File    source,
                                                               final boolean replaceExisting,
                                                               final boolean inPlaceImport)
+        throws InterruptedException
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
         
@@ -382,7 +381,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                                         final List<List<ImportableItem>> batches,
                                                                         final boolean                    replaceExisting,
                                                                         final boolean                    inPlaceImport)
-                                                                        
+        throws InterruptedException
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
         
@@ -393,11 +392,7 @@ public abstract class AbstractBulkFilesystemImporter
                 result.addAll(importBatchInTxn(target, sourceRoot, batch, replaceExisting, inPlaceImport));
 
                 // If we're running on a background thread that's been interrupted, terminate early
-                if (Thread.interrupted())
-                {
-                    if (log.isWarnEnabled()) log.warn(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
-                    break;
-                }
+                if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
             }
         }
         

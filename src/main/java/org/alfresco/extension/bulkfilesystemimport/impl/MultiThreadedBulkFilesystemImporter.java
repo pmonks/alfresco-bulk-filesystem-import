@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus.ProcessingState;
 import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
@@ -175,8 +174,10 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     Thread.sleep(completionCheckIntervalMs);
                     
                     // Keep looping (with a delay each time), checking if the import completed
-                    while (!Thread.interrupted() && importStatus.inProgress())
+                    while (importStatus.inProgress())
                     {
+                        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
+                                                                                                   
                         if (numberOfActiveUnitsOfWork.get() == 0 && threadPool.getQueue().isEmpty())
                         {
                             if (!importStatus.getProcessingState().equals(ProcessingState.FAILED))
@@ -271,13 +272,16 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                         throws Exception
                     {
                         List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, inPlaceImport);
-
-                        // Submit each sub-directory to the thread pool for independent importation
-                        for (final Pair<NodeRef, File> subDirectory : subDirectories)
+                        
+                        if (!Thread.currentThread().isInterrupted())
                         {
-                            if (subDirectory != null)
+                            // Submit each sub-directory to the thread pool for independent importation
+                            for (final Pair<NodeRef, File> subDirectory : subDirectories)
                             {
-                                threadPool.submit(new UnitOfWork(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport, currentUser));
+                                if (subDirectory != null)
+                                {
+                                    threadPool.submit(new UnitOfWork(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport, currentUser));
+                                }
                             }
                         }
                         
@@ -298,6 +302,7 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     (rootCause instanceof InterruptedException || rootCause instanceof ClosedByInterruptException))
                 {
                     // We were shutting down and an interrupted exception was thrown - this is normal so we ignore it
+                    if (log.isDebugEnabled()) log.debug(Thread.currentThread().getName() + " was interrupted.", t);
                 }
                 else
                 {

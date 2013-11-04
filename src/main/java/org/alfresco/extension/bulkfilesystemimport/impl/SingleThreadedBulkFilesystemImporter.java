@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
 import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 import org.alfresco.repo.content.ContentStore;
@@ -102,18 +101,18 @@ public class SingleThreadedBulkFilesystemImporter
                                                final File    source,
                                                final boolean replaceExisting,
                                                final boolean inPlaceImport)
+        throws InterruptedException
     {
         List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, inPlaceImport);
         
-        if (!Thread.interrupted())  // Exit ASAP if the thread has been interrupted
+        // Recursively import sub directories
+        for (final Pair<NodeRef, File> subDirectory : subDirectories)
         {
-            // Recursively import sub directories
-            for (final Pair<NodeRef, File> subDirectory : subDirectories)
+            if (Thread.interrupted()) break;  // Exit ASAP if the thread has been interrupted
+            
+            if (subDirectory != null)
             {
-                if (subDirectory != null)
-                {
-                    bulkImportRecursively(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport);
-                }
+                bulkImportRecursively(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport);
             }
         }
     }

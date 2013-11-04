@@ -49,6 +49,7 @@ public interface DirectoryAnalyser
      * 
      * @param directory The directory to analyse (note: <u>must</u> be a directory) <i>(must not be null)</i>.
      * @return An <code>AnalysedDirectory</code> object <i>(will not be null)</i>.
+     * @throws InterruptedException If the thread executing the method is interrupted.
      */
-    public AnalysedDirectory analyseDirectory(final File directory);
+    public AnalysedDirectory analyseDirectory(final File directory) throws InterruptedException;
 }
