@@ -60,7 +60,13 @@ public class BulkFilesystemImporterThreadPoolExecutor
                                                     final TimeUnit keepAliveTimeUnit,
                                                     final int      blockingQueueSize)
     {
-        super(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveTimeUnit, new LinkedBlockingQueue<Runnable>(blockingQueueSize), new BulkFilesystemImporterThreadFactory());
+        super(corePoolSize      <= 0    ? DEFAULT_CORE_POOL_SIZE         : corePoolSize,
+              maximumPoolSize   <= 0    ? DEFAULT_MAXIMUM_CORE_POOL_SIZE : maximumPoolSize,
+              keepAliveTime     <= 0    ? DEFAULT_KEEP_ALIVE_TIME        : keepAliveTime,
+              keepAliveTimeUnit == null ? DEFAULT_KEEP_ALIVE_TIME_UNIT   : keepAliveTimeUnit,
+              new LinkedBlockingQueue<Runnable>(blockingQueueSize <= 0 ? DEFAULT_BLOCKING_QUEUE_SIZE : blockingQueueSize),
+              new BulkFilesystemImporterThreadFactory());
+        
         this.setRejectedExecutionHandler(new CallerRunsPolicy());  // This makes me a little nervous - I think it opens the possibility for out-of-order import of directories (e.g. subdirectory being imported before parent has been imported
         
         if (log.isDebugEnabled()) log.debug("Creating new bulk import thread pool." +
