@@ -711,7 +711,7 @@ public abstract class AbstractBulkFilesystemImporter
         
         if (contentUrl.length() > MAX_CONTENT_URL_LENGTH)
         {
-            throw new IllegalStateException("File '" + getFileName(contentAndMetadata.getContentFile()) + "' exceeds the maximum length allowed for content URLs (" + MAX_CONTENT_URL_LENGTH + " characters).");
+            throw new RuntimeException("The content URL '" + contentUrl + "' for file '" + getFileName(contentAndMetadata.getContentFile()) + "' exceeds the maximum length allowed for an in-place import (" + MAX_CONTENT_URL_LENGTH + " characters).");
         }
                 
         if (mimeTypeService.isText(mimeType))
