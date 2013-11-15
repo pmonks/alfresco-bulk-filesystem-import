@@ -86,9 +86,10 @@ public abstract class AbstractBulkFilesystemImporter
 {
     private final static Log log = LogFactory.getLog(AbstractBulkFilesystemImporter.class);
     
-    private final static String OS_FILE_SEPARATOR     = System.getProperty("file.separator");
-    private final static int    DEFAULT_BATCH_WEIGHT  = 100;
-    private final static String DEFAULT_TEXT_ENCODING = "UTF-8";
+    private final static String OS_FILE_SEPARATOR      = System.getProperty("file.separator");
+    private final static int    DEFAULT_BATCH_WEIGHT   = 100;
+    private final static String DEFAULT_TEXT_ENCODING  = "UTF-8";
+    private final static int    MAX_CONTENT_URL_LENGTH = 255;
 
     protected final ServiceRegistry      serviceRegistry;
     protected final BehaviourFilter      behaviourFilter;
@@ -707,6 +708,11 @@ public abstract class AbstractBulkFilesystemImporter
         String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + contentAndMetadata.getContentFile().getAbsolutePath().replace(configuredContentStore.getRootLocation() + OS_FILE_SEPARATOR, "");
         String mimeType   = mimeTypeService.guessMimetype(contentAndMetadata.getContentFile().getName());
         String encoding   = DEFAULT_TEXT_ENCODING;
+        
+        if (contentUrl.length() > MAX_CONTENT_URL_LENGTH)
+        {
+            throw new IllegalStateException("File '" + getFileName(contentAndMetadata.getContentFile()) + "' exceeds the maximum length allowed for content URLs (" + MAX_CONTENT_URL_LENGTH + " characters).");
+        }
                 
         if (mimeTypeService.isText(mimeType))
         {

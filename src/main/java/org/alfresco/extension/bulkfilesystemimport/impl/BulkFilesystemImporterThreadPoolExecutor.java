@@ -41,7 +41,7 @@ public class BulkFilesystemImporterThreadPoolExecutor
     private final static int      DEFAULT_MAXIMUM_CORE_POOL_SIZE = Runtime.getRuntime().availableProcessors() * 2;   // We naively assume 50+% of time is spent blocked on I/O
     private final static long     DEFAULT_KEEP_ALIVE_TIME        = 1L;
     private final static TimeUnit DEFAULT_KEEP_ALIVE_TIME_UNIT   = TimeUnit.MINUTES;
-    private final static int      DEFAULT_BLOCKING_QUEUE_SIZE    = 10000;
+    private final static int      DEFAULT_BLOCKING_QUEUE_SIZE    = 100000;
     
     
     public BulkFilesystemImporterThreadPoolExecutor()
