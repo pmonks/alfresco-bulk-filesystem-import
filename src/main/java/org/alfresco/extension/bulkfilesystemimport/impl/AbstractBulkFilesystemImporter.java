@@ -705,13 +705,20 @@ public abstract class AbstractBulkFilesystemImporter
     {
         ContentData result = null;
         
-        String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + contentAndMetadata.getContentFile().getAbsolutePath().replace(configuredContentStore.getRootLocation() + OS_FILE_SEPARATOR, "");
+        String normalisedFilename         = contentAndMetadata.getContentFile().getAbsolutePath().replaceAll("\\\\", "/");  // Normalise all paths to be Unix-delimited
+        String normalisedContentStoreRoot = configuredContentStore.getRootLocation().replaceAll("\\\\", "/");
+
+        if (log.isDebugEnabled()) log.debug("Constructing content URL for '" + normalisedFilename + "'. Content store is located at '" + normalisedContentStoreRoot + "'.");
+        
+        String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + normalisedFilename.replace(normalisedContentStoreRoot + "/", "");
         String mimeType   = mimeTypeService.guessMimetype(contentAndMetadata.getContentFile().getName());
         String encoding   = DEFAULT_TEXT_ENCODING;
+
+        if (log.isDebugEnabled()) log.debug("Content URL is '" + contentUrl + "'.");
         
         if (contentUrl.length() > MAX_CONTENT_URL_LENGTH)
         {
-            throw new RuntimeException("The content URL '" + contentUrl + "' for file '" + getFileName(contentAndMetadata.getContentFile()) + "' exceeds the maximum length allowed for an in-place import (" + MAX_CONTENT_URL_LENGTH + " characters).");
+            throw new RuntimeException("The content URL '" + contentUrl + "' for file '" + getFileName(contentAndMetadata.getContentFile()) + "' is " + contentUrl.length() + " characters long, but the maximum allowed for an in-place import is " + MAX_CONTENT_URL_LENGTH + " characters.");
         }
                 
         if (mimeTypeService.isText(mimeType))
