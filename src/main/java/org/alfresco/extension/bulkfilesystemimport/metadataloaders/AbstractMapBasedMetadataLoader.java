@@ -55,32 +55,33 @@ abstract class AbstractMapBasedMetadataLoader
     private final static String PROPERTY_NAME_ASPECTS      = "aspects";
     private final static String PROPERTY_NAME_NAMESPACE    = "namespace";
     private final static String PROPERTY_NAME_PARENT_ASSOC = "parentAssociation";
+    private final static String PROPERTY_NAME_SEPARATOR    = "separator";
 
-    private final static String DEFAULT_MULTI_VALUED_SEPARATOR = ",";
+    private final static String DEFAULT_SEPARATOR = ",";
     
     protected final NamespaceService  namespaceService;
-    protected final DictionaryService dictionaryService; 
-    protected final String            multiValuedSeparator;
+    protected final DictionaryService dictionaryService;
+    protected final String            defaultSeparator;
     protected final String            metadataFileExtension;
     
     
     
     protected AbstractMapBasedMetadataLoader(final ServiceRegistry serviceRegistry, final String fileExtension)
     {
-        this(serviceRegistry, DEFAULT_MULTI_VALUED_SEPARATOR, fileExtension);
+        this(serviceRegistry, DEFAULT_SEPARATOR, fileExtension);
     }
     
     
-    protected AbstractMapBasedMetadataLoader(final ServiceRegistry serviceRegistry, final String multiValuedSeparator, final String fileExtension)
+    protected AbstractMapBasedMetadataLoader(final ServiceRegistry serviceRegistry, final String defaultSeparator, final String fileExtension)
     {
         // PRECONDITIONS
-        assert serviceRegistry      != null : "serviceRegistry must not be null";
-        assert multiValuedSeparator != null : "multiValuedSeparator must not be null";
+        assert serviceRegistry  != null : "serviceRegistry must not be null";
+        assert defaultSeparator != null : "defaultSeparator must not be null";
         
         // Body
         this.namespaceService      = serviceRegistry.getNamespaceService();
         this.dictionaryService     = serviceRegistry.getDictionaryService();
-        this.multiValuedSeparator  = multiValuedSeparator;
+        this.defaultSeparator      = defaultSeparator;
         this.metadataFileExtension = fileExtension;
     }
     
@@ -116,64 +117,79 @@ abstract class AbstractMapBasedMetadataLoader
             if (metadataFile.canRead())
             {
                 Map<String,Serializable> metadataProperties = loadMetadataFromFile(metadataFile);
+                String                   separator          = defaultSeparator;
                 
                 if (metadataProperties != null)
                 {
+                    // Process the "special keys" first, to ensure they get processed before any metadata properties
+                    if (metadataProperties.containsKey(PROPERTY_NAME_SEPARATOR))
+                    {
+                        separator = (String)metadataProperties.get(PROPERTY_NAME_SEPARATOR);
+                        metadataProperties.remove(PROPERTY_NAME_SEPARATOR);
+                    }
+                    
+                    if (metadataProperties.containsKey(PROPERTY_NAME_NAMESPACE))
+                    {
+                        metadata.setNamespace((String)metadataProperties.get(PROPERTY_NAME_NAMESPACE));
+                        metadataProperties.remove(PROPERTY_NAME_NAMESPACE);
+                    }
+                    
+                    if (metadataProperties.containsKey(PROPERTY_NAME_TYPE))
+                    {
+                        String typeName = (String)metadataProperties.get(PROPERTY_NAME_TYPE);
+                        QName  type     = QName.createQName(typeName, namespaceService);
+                        
+                        metadata.setType(type);
+                        metadataProperties.remove(PROPERTY_NAME_TYPE);
+                    }
+                    
+                    if (metadataProperties.containsKey(PROPERTY_NAME_ASPECTS))
+                    {
+                        String[] aspectNames = ((String)metadataProperties.get(PROPERTY_NAME_ASPECTS)).split(separator);
+                        
+                        for (final String aspectName : aspectNames)
+                        {
+                            QName aspect = QName.createQName(aspectName.trim(), namespaceService);
+                            metadata.addAspect(aspect);
+                        }
+                        
+                        metadataProperties.remove(PROPERTY_NAME_ASPECTS);
+                    }
+                    
+                    if (metadataProperties.containsKey(PROPERTY_NAME_PARENT_ASSOC))
+                    {
+                        String parentAssocName = (String)metadataProperties.get(PROPERTY_NAME_PARENT_ASSOC);
+                        QName  parentAssoc     = QName.createQName(parentAssocName, namespaceService);
+                        
+                        metadata.setParentAssoc(parentAssoc);
+                        metadataProperties.remove(PROPERTY_NAME_PARENT_ASSOC);
+                    }
+                    
+                    // Treat everything else as a metadata property
                     for (String key : metadataProperties.keySet())
                     {
-                        if (PROPERTY_NAME_TYPE.equals(key))
-                        {
-                            String typeName = (String)metadataProperties.get(key);
-                            QName  type     = QName.createQName(typeName, namespaceService);
-                            
-                            metadata.setType(type);
-                        }
-                        else if (PROPERTY_NAME_ASPECTS.equals(key))
-                        {
-                            String[] aspectNames = ((String)metadataProperties.get(key)).split(",");
-                            
-                            for (final String aspectName : aspectNames)
-                            {
-                                QName aspect = QName.createQName(aspectName.trim(), namespaceService);
-                                metadata.addAspect(aspect);
-                            }
-                        }
-                        else if (PROPERTY_NAME_NAMESPACE.equals(key))
-                        {
-                            metadata.setNamespace((String)metadataProperties.get(key));
-                        }
-                        else if (PROPERTY_NAME_PARENT_ASSOC.equals(key))
-                        {
-                            String parentAssocName = (String)metadataProperties.get(key);
-                            QName  parentAssoc     = QName.createQName(parentAssocName, namespaceService);
-                            
-                            metadata.setParentAssoc(parentAssoc);
-                        }
-                        else  // Any other key => property
-                        {
-                            //####TODO: Issue #62: figure out how to handle properties of type cm:content - they need to be streamed in via a Writer
-                        	QName              name               = QName.createQName(key, namespaceService);
-                        	PropertyDefinition propertyDefinition = dictionaryService.getProperty(name);  // TODO: measure performance impact of this API call!!
-                        	
-                        	if (propertyDefinition != null)
+                        //####TODO: Issue #62: figure out how to handle properties of type cm:content - they need to be streamed in via a Writer
+                    	QName              name               = QName.createQName(key, namespaceService);
+                    	PropertyDefinition propertyDefinition = dictionaryService.getProperty(name);  // TODO: measure performance impact of this API call!!
+                    	
+                    	if (propertyDefinition != null)
+                    	{
+                        	if (propertyDefinition.isMultiValued())
                         	{
-                            	if (propertyDefinition.isMultiValued())
-                            	{
-                                    // Multi-valued property
-                            		ArrayList<Serializable> values = new ArrayList<Serializable>(Arrays.asList(((String)metadataProperties.get(key)).split(multiValuedSeparator)));
-                            	    metadata.addProperty(name, values);
-                            	}
-                            	else
-                            	{
-                            	    // Single value property
-                            		metadata.addProperty(name, metadataProperties.get(key));
-                            	}
+                                // Multi-valued property
+                        		ArrayList<Serializable> values = new ArrayList<Serializable>(Arrays.asList(((String)metadataProperties.get(key)).split(separator)));
+                        	    metadata.addProperty(name, values);
                         	}
                         	else
                         	{
-                        	    if (log.isWarnEnabled()) log.warn("Property " + String.valueOf(name) + " doesn't exist in the Data Dictionary.  Ignoring it.");
+                        	    // Single value property
+                        		metadata.addProperty(name, metadataProperties.get(key));
                         	}
-                        }
+                    	}
+                    	else
+                    	{
+                    	    if (log.isWarnEnabled()) log.warn("Property " + String.valueOf(name) + " doesn't exist in the Data Dictionary.  Ignoring it.");
+                    	}
                     }
                 }
             }

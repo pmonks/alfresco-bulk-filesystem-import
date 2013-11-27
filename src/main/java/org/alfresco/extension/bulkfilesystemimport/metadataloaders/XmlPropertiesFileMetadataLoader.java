@@ -102,9 +102,9 @@ public final class XmlPropertiesFileMetadataLoader
     }
     
     
-    public XmlPropertiesFileMetadataLoader(final ServiceRegistry serviceRegistry, final String multiValuedSeparator)
+    public XmlPropertiesFileMetadataLoader(final ServiceRegistry serviceRegistry, final String defaultMultiValuedSeparator)
     {
-        super(serviceRegistry, multiValuedSeparator, METADATA_FILE_EXTENSION);
+        super(serviceRegistry, defaultMultiValuedSeparator, METADATA_FILE_EXTENSION);
     }
 
     
@@ -131,7 +131,7 @@ public final class XmlPropertiesFileMetadataLoader
         }
         finally
         {
-            IOUtils.closeQuietly(metadataInputStream);
+            IOUtils.closeQuietly(metadataInputStream);   // Note: this shouldn't normally be needed as loadFromXML closes the stream passed to it
         }
         
         return(result);

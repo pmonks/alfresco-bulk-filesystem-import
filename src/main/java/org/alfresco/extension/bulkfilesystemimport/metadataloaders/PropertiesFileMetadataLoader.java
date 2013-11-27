@@ -89,7 +89,7 @@ public final class PropertiesFileMetadataLoader
 {
     private final static Log log = LogFactory.getLog(PropertiesFileMetadataLoader.class);
     
-    private final static String METADATA_FILE_EXTENSION = "properties.xml";
+    private final static String METADATA_FILE_EXTENSION = "properties";
 
     
     public PropertiesFileMetadataLoader(final ServiceRegistry serviceRegistry)
@@ -98,9 +98,9 @@ public final class PropertiesFileMetadataLoader
     }
     
     
-    public PropertiesFileMetadataLoader(final ServiceRegistry serviceRegistry, final String multiValuedSeparator)
+    public PropertiesFileMetadataLoader(final ServiceRegistry serviceRegistry, final String defaultMultiValuedSeparator)
     {
-        super(serviceRegistry, multiValuedSeparator, METADATA_FILE_EXTENSION);
+        super(serviceRegistry, defaultMultiValuedSeparator, METADATA_FILE_EXTENSION);
     }
 
     
