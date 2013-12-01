@@ -86,7 +86,6 @@ public abstract class AbstractBulkFilesystemImporter
 {
     private final static Log log = LogFactory.getLog(AbstractBulkFilesystemImporter.class);
     
-    private final static String OS_FILE_SEPARATOR      = System.getProperty("file.separator");
     private final static int    DEFAULT_BATCH_WEIGHT   = 100;
     private final static String DEFAULT_TEXT_ENCODING  = "UTF-8";
     private final static int    MAX_CONTENT_URL_LENGTH = 255;
@@ -473,7 +472,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                final ImportableItem   importableItem,
                                                final boolean          replaceExisting,
                                                final boolean          inPlaceImport)
-                                               
+        throws InterruptedException
     {
         if (log.isDebugEnabled()) log.debug("Importing " + String.valueOf(importableItem));
 
@@ -592,6 +591,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                final ImportableItem          importableItem,
                                                final boolean                 inPlaceImport, 
                                                final MetadataLoader.Metadata metadata)
+        throws InterruptedException
     {
         int result = 0;
         
@@ -618,12 +618,15 @@ public abstract class AbstractBulkFilesystemImporter
     private final int importContentVersions(final NodeRef        nodeRef,
                                             final ImportableItem importableItem,
                                             final boolean        inPlaceImport)
+        throws InterruptedException
     {
         int result               = 0;
         int previousMajorVersion = 0;
         
         for (final ImportableItem.VersionedContentAndMetadata versionEntry : importableItem.getVersionEntries())
         {
+            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            
             Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
             MetadataLoader.Metadata   metadata          = loadMetadata(importableItem.getFileType(), versionEntry);
             
@@ -659,6 +662,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                 final ImportableItem.ContentAndMetadata contentAndMetadata,
                                                 final boolean                           inPlaceImport,
                                                 final MetadataLoader.Metadata           metadata)
+        throws InterruptedException
     {
         // Write the content of the file
         if (contentAndMetadata.contentFileExists() ||
@@ -704,6 +708,7 @@ public abstract class AbstractBulkFilesystemImporter
     private final void importImportableItemDirectory(final NodeRef                 nodeRef,
                                                      final ImportableItem          importableItem,
                                                      final MetadataLoader.Metadata metadata)
+        throws InterruptedException
     {
         if (importableItem.hasVersionEntries())
         {
@@ -749,6 +754,7 @@ public abstract class AbstractBulkFilesystemImporter
     private final void importImportableItemMetadata(final NodeRef                 nodeRef,
                                                     final File                    parentFile,
                                                     final MetadataLoader.Metadata metadata)
+        throws InterruptedException
     {
         importStatus.setCurrentFileBeingProcessed(getFileName(parentFile) + " (metadata)");
 
@@ -757,6 +763,8 @@ public abstract class AbstractBulkFilesystemImporter
         {
             for (final QName aspect : metadata.getAspects())
             {
+                if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                
                 if (log.isDebugEnabled()) log.debug("Attaching aspect '" + String.valueOf(aspect) + "' to node '" + String.valueOf(nodeRef) + "'.");
                 
                 nodeService.addAspect(nodeRef, aspect, null);  // Note: we set the aspect's properties separately, hence null for the third parameter
@@ -795,7 +803,6 @@ public abstract class AbstractBulkFilesystemImporter
     private final void validateNodeRefIsWritableSpace(final NodeRef target)
     {
         final PermissionService permissionService = serviceRegistry.getPermissionService();
-        
         
         if (target == null)
         {

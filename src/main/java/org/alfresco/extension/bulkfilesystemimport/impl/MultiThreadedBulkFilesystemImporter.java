@@ -272,21 +272,18 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     public Object doWork()
                         throws Exception
                     {
+                        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                        
                         List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, inPlaceImport);
                         
-                        if (Thread.currentThread().isInterrupted())
+                        // Submit each sub-directory to the thread pool for independent importation
+                        for (final Pair<NodeRef, File> subDirectory : subDirectories)
                         {
                             if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
-                        }
-                        else
-                        {
-                            // Submit each sub-directory to the thread pool for independent importation
-                            for (final Pair<NodeRef, File> subDirectory : subDirectories)
+                            
+                            if (subDirectory != null)
                             {
-                                if (subDirectory != null)
-                                {
-                                    threadPool.submit(new UnitOfWork(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport, currentUser));
-                                }
+                                threadPool.submit(new UnitOfWork(subDirectory.getFirst(), sourceRoot, subDirectory.getSecond(), replaceExisting, inPlaceImport, currentUser));
                             }
                         }
                         
@@ -306,8 +303,9 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                 if (importStatus.getProcessingState().equals(ProcessingState.STOPPING) &&
                     (rootCause instanceof InterruptedException || rootCause instanceof ClosedByInterruptException))
                 {
-                    // We were shutting down and an interrupted exception was thrown - this is normal so we ignore it
+                    // We were shutting down and an interrupted exception was thrown
                     if (log.isDebugEnabled()) log.debug(Thread.currentThread().getName() + " was interrupted.", t);
+                    threadPool.shutdownNow();  // Shouldn't be needed, but just in case...
                 }
                 else
                 {

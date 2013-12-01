@@ -41,7 +41,7 @@ public class BulkFilesystemImporterThreadPoolExecutor
     private final static int      DEFAULT_MAXIMUM_CORE_POOL_SIZE = Runtime.getRuntime().availableProcessors() * 2;   // We naively assume 50+% of time is spent blocked on I/O
     private final static long     DEFAULT_KEEP_ALIVE_TIME        = 1L;
     private final static TimeUnit DEFAULT_KEEP_ALIVE_TIME_UNIT   = TimeUnit.MINUTES;
-    private final static int      DEFAULT_BLOCKING_QUEUE_SIZE    = 100000;
+    private final static int      DEFAULT_BLOCKING_QUEUE_SIZE    = 1000000;
     
     
     public BulkFilesystemImporterThreadPoolExecutor()
@@ -67,7 +67,8 @@ public class BulkFilesystemImporterThreadPoolExecutor
               new LinkedBlockingQueue<Runnable>(blockingQueueSize <= 0 ? DEFAULT_BLOCKING_QUEUE_SIZE : blockingQueueSize),
               new BulkFilesystemImporterThreadFactory());
 
-        // This won't work, since it allows for out-of-order execution, and also doesn't allow the thread pool to be cleanly shutdown
+        // This won't work, since it allows for out-of-order execution
+        // It also doesn't allow the thread pool to be cleanly shutdown - see http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ThreadPoolExecutor.html
 //        this.setRejectedExecutionHandler(new CallerRunsPolicy());
         
         if (log.isDebugEnabled()) log.debug("Creating new bulk import thread pool." +
