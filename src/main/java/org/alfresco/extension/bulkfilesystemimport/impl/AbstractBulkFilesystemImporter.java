@@ -752,6 +752,12 @@ public abstract class AbstractBulkFilesystemImporter
         // Set property values for both the type and any aspect(s)
         if (metadata.getProperties() != null)
         {
+            // If there's no name in the metadata, add it - this should only ever occur for metadata-only nodes that don't include a cm:name property
+            if (!metadata.getProperties().containsKey(ContentModel.PROP_NAME))
+            {
+                metadata.addProperty(ContentModel.PROP_NAME, parentFile.getName());
+            }
+                                                      
             if (log.isDebugEnabled()) log.debug("Adding properties to node '" + String.valueOf(nodeRef) + "':\n" + mapToString(metadata.getProperties()));
             
             try
@@ -1005,7 +1011,8 @@ public abstract class AbstractBulkFilesystemImporter
         }
         
         // Step 3: read the parent filename from the item itself
-        if (result == null)
+        if (result         == null &&
+            importableItem != null)
         {
             result = importableItem.getParentFilename();
         }
