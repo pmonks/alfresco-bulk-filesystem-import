@@ -31,6 +31,7 @@ public interface BulkImportStatus
 {
     // General information
     boolean         inProgress();
+    boolean         isStopping();
     ProcessingState getProcessingState();
     
     String     getSourceDirectory();

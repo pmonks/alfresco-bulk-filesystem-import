@@ -293,11 +293,11 @@ public abstract class AbstractBulkFilesystemImporter
         
         // PHASE 1: analyse the source directory
         final AnalysedDirectory          analysedDirectory       = directoryAnalyser.analyseDirectory(source);
-        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
         
         // PHASE 2: filter ImportableItems from the source directory
         final List<ImportableItem>       filteredImportableItems = filterImportableItems(analysedDirectory.importableItems);
-        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
         
         // PHASE 3: batch ImportableItems
         final List<List<ImportableItem>> batchedImportableItems  = batchImportableItems(filteredImportableItems);
@@ -308,11 +308,11 @@ public abstract class AbstractBulkFilesystemImporter
                                             "\n\t" + filteredImportableItems.size()           + " filtered importable item" + (filteredImportableItems.size()           == 1 ? "" : "s")  +
                                             "\n\t" + batchedImportableItems.size()            + " batch"                    + (batchedImportableItems.size()            == 1 ? "" : "es"));
         
-        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
         
         // PHASE 4: load the batches
         result.addAll(importImportableItemBatches(target, sourceRoot, batchedImportableItems, replaceExisting, inPlaceImport));
-        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
         
         return(result);
     }
@@ -334,7 +334,7 @@ public abstract class AbstractBulkFilesystemImporter
             {
                 for (final ImportableItem importableItem : importableItems)
                 {
-                    if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                    if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
                     
                     boolean filterImportableItem = false;
                     

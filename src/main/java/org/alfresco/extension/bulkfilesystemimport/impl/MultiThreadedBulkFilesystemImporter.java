@@ -177,13 +177,11 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     // Keep looping (with a delay each time), checking if the import completed
                     while (importStatus.inProgress())
                     {
-                        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
-                                                                                                   
                         if (numberOfActiveUnitsOfWork.get() == 0 && threadPool.getQueue().isEmpty())
                         {
                             if (!importStatus.getProcessingState().equals(ProcessingState.FAILED))
                             {
-                                if (importStatus.getProcessingState().equals(ProcessingState.STOPPING))
+                                if (importStatus.isStopping())
                                 {
                                     importStatus.importStopped();
                                     if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' stopped.");
@@ -272,14 +270,14 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     public Object doWork()
                         throws Exception
                     {
-                        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
                         
                         List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, inPlaceImport);
                         
                         // Submit each sub-directory to the thread pool for independent importation
                         for (final Pair<NodeRef, File> subDirectory : subDirectories)
                         {
-                            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
                             
                             if (subDirectory != null)
                             {

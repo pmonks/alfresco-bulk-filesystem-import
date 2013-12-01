@@ -214,6 +214,12 @@ public class BulkImportStatusImpl
         this.endNs   = null;
     }
     
+    @Override
+    public boolean isStopping()
+    {
+        return(ProcessingState.STOPPING.equals(processingState));
+    }
+    
     public void stopping()
     {
         processingState = ProcessingState.STOPPING;

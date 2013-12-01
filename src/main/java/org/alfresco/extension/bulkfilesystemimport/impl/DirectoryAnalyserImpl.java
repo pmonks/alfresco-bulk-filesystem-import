@@ -87,7 +87,7 @@ public final class DirectoryAnalyserImpl
         start = System.nanoTime();
         for (final File file : result.originalListing)
         {
-            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
             
             if (file.canRead())
             {
