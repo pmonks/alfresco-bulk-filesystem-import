@@ -101,7 +101,8 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
         
         // Kill the thread pool - the monitoring thread performs the final status update once everything is down
         if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
-        threadPool.shutdownNow();
+        List<Runnable> remainingUnitsOfWork = threadPool.shutdownNow();
+        if (log.isDebugEnabled()) log.debug("Thread pool shutdown, " + remainingUnitsOfWork == null ? 0 : remainingUnitsOfWork.size() + " units of work discarded.");
     }
     
     
@@ -273,7 +274,11 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     {
                         List<Pair<NodeRef, File>> subDirectories = importDirectory(target, sourceRoot, source, replaceExisting, inPlaceImport);
                         
-                        if (!Thread.currentThread().isInterrupted())
+                        if (Thread.currentThread().isInterrupted())
+                        {
+                            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                        }
+                        else
                         {
                             // Submit each sub-directory to the thread pool for independent importation
                             for (final Pair<NodeRef, File> subDirectory : subDirectories)

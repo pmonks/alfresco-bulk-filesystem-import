@@ -294,9 +294,11 @@ public abstract class AbstractBulkFilesystemImporter
         
         // PHASE 1: analyse the source directory
         final AnalysedDirectory          analysedDirectory       = directoryAnalyser.analyseDirectory(source);
-         
+        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+        
         // PHASE 2: filter ImportableItems from the source directory
         final List<ImportableItem>       filteredImportableItems = filterImportableItems(analysedDirectory.importableItems);
+        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
         
         // PHASE 3: batch ImportableItems
         final List<List<ImportableItem>> batchedImportableItems  = batchImportableItems(filteredImportableItems);
@@ -307,14 +309,18 @@ public abstract class AbstractBulkFilesystemImporter
                                             "\n\t" + filteredImportableItems.size()           + " filtered importable item" + (filteredImportableItems.size()           == 1 ? "" : "s")  +
                                             "\n\t" + batchedImportableItems.size()            + " batch"                    + (batchedImportableItems.size()            == 1 ? "" : "es"));
         
+        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+        
         // PHASE 4: load the batches
         result.addAll(importImportableItemBatches(target, sourceRoot, batchedImportableItems, replaceExisting, inPlaceImport));
+        if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
         
         return(result);
     }
     
     
     private final List<ImportableItem> filterImportableItems(final List<ImportableItem> importableItems)
+        throws InterruptedException
     {
         List<ImportableItem> result = new ArrayList<ImportableItem>();
 
@@ -329,6 +335,8 @@ public abstract class AbstractBulkFilesystemImporter
             {
                 for (final ImportableItem importableItem : importableItems)
                 {
+                    if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                    
                     boolean filterImportableItem = false;
                     
                     for (final ImportFilter filter : importFilters)
@@ -353,6 +361,7 @@ public abstract class AbstractBulkFilesystemImporter
     
     
     private final List<List<ImportableItem>> batchImportableItems(final List<ImportableItem> importableItems)
+        throws InterruptedException
     {
         List<List<ImportableItem>> result             = new ArrayList<List<ImportableItem>>();
         int                        currentBatch       = 0;
@@ -362,6 +371,8 @@ public abstract class AbstractBulkFilesystemImporter
         
         for (final ImportableItem importableItem : importableItems)
         {
+            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            
             result.get(currentBatch).add(importableItem);
             currentBatchWeight += importableItem.weight();
             
@@ -390,10 +401,9 @@ public abstract class AbstractBulkFilesystemImporter
         {
             for (final List<ImportableItem> batch : batches)
             {
+                if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                
                 result.addAll(importBatchInTxn(target, sourceRoot, batch, replaceExisting, inPlaceImport));
-
-                // If we're running on a background thread that's been interrupted, terminate early
-                if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
             }
         }
         
@@ -414,6 +424,7 @@ public abstract class AbstractBulkFilesystemImporter
             {
                 @Override
                 public List<Pair<NodeRef, File>> execute()
+                    throws Exception
                 {
                     // Disable the auditable aspect's behaviours for this transaction, to allow creation & modification dates to be set 
                     behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
@@ -434,11 +445,14 @@ public abstract class AbstractBulkFilesystemImporter
                                                         final List<ImportableItem> batch,
                                                         final boolean              replaceExisting,
                                                         final boolean              inPlaceImport)
+        throws InterruptedException
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
         
         for (final ImportableItem importableItem : batch)
         {
+            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            
             NodeRef nodeRef = importImportableItem(target, sourcePath, importableItem, replaceExisting, inPlaceImport);
             
             // If it's a directory, add it to the list of sub-directories to be processed

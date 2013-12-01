@@ -87,7 +87,7 @@ public final class DirectoryAnalyserImpl
         start = System.nanoTime();
         for (final File file : result.originalListing)
         {
-            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
+            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
             
             if (file.canRead())
             {
@@ -140,6 +140,7 @@ public final class DirectoryAnalyserImpl
                 iter.remove();
             }
         }
+        
         end = System.nanoTime();
         if (log.isTraceEnabled()) log.trace("Filter invalid importable items took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
 
