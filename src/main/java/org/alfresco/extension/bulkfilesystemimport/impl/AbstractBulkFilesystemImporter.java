@@ -225,7 +225,7 @@ public abstract class AbstractBulkFilesystemImporter
             
             if (backingStores != null)
             {
-                for (ContentStore store : backingStores)
+                for (final ContentStore store : backingStores)
                 {
                     if (store instanceof FileContentStore)
                     {

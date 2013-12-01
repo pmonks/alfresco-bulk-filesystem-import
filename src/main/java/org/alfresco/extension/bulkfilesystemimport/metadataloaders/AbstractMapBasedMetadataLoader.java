@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.alfresco.extension.bulkfilesystemimport.ImportableItem.ContentAndMetadata;
@@ -31,8 +33,8 @@ import org.alfresco.extension.bulkfilesystemimport.MetadataLoader;
 import org.alfresco.extension.bulkfilesystemimport.impl.AbstractBulkFilesystemImporter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.alfresco.service.ServiceRegistry;
+import org.alfresco.service.cmr.dictionary.DataTypeDefinition;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.dictionary.PropertyDefinition;
 import org.alfresco.service.namespace.NamespaceService;
@@ -178,12 +180,12 @@ abstract class AbstractMapBasedMetadataLoader
                         	{
                                 // Multi-valued property
                         		ArrayList<Serializable> values = new ArrayList<Serializable>(Arrays.asList(((String)metadataProperties.get(key)).split(separator)));
-                        	    metadata.addProperty(name, values);
+                        	    metadata.addProperty(name, mapValues(propertyDefinition.getDataType(), values));
                         	}
                         	else
                         	{
                         	    // Single value property
-                        		metadata.addProperty(name, metadataProperties.get(key));
+                        		metadata.addProperty(name, mapValue(propertyDefinition.getDataType(), metadataProperties.get(key)));
                         	}
                     	}
                     	else
@@ -198,6 +200,56 @@ abstract class AbstractMapBasedMetadataLoader
                 if (log.isWarnEnabled()) log.warn("Metadata file '" + AbstractBulkFilesystemImporter.getFileName(metadataFile) + "' is not readable.");
             }
         }
+    }
+    
+    
+    /**
+     * This method performs mapping for multi-value property values.
+     * 
+     * @param dataType The data type of the property <i>(must not be null)</i>.
+     * @param values   The current values <i>(may be null)</i>.
+     * @return The mapped values <i>(may be null)</i>.
+     * @see AbstractMapBasedMetadataLoader.mapValue
+     */
+    private final ArrayList<Serializable> mapValues(final DataTypeDefinition dataType, final List<Serializable> values)
+    {
+        // While it would be ideal to use List<Serializable> for the return type, List is not Serializable...
+        ArrayList<Serializable> result = null;
+
+        if (values != null)
+        {
+            result = new ArrayList<Serializable>(values.size());
+
+            for (final Serializable value : values)
+            {
+                result.add(mapValue(dataType, value));
+            }
+        }
+        
+        return(result);
+    }
+    
+
+    /**
+     * This method performs mapping for property values.  Right now this means mapping from the value "NOW" to today's date/time
+     * for d:date and d:datetime properties.
+     * 
+     * @param dataType The data type of the property <i>(must not be null)</i>.
+     * @param value    The current value <i>(may be null)</i>.
+     * @return The mapped value <i>(may be null)</i>.
+     */
+    private final Serializable mapValue(final DataTypeDefinition dataType, final Serializable value)
+    {
+        Serializable result = value;
+        
+        if ((DataTypeDefinition.DATE.equals(dataType.getName()) ||
+             DataTypeDefinition.DATETIME.equals(dataType.getName())) &&
+            "NOW".equals(value))
+        {
+            result = new Date();
+        }
+        
+        return(result);
     }
 
 }
