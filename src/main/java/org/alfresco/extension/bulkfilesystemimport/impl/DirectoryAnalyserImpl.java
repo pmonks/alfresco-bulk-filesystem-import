@@ -117,7 +117,7 @@ public final class DirectoryAnalyserImpl
             }
             else
             {
-                if (log.isWarnEnabled()) log.warn("Skipping unreadable file '" + AbstractBulkFilesystemImporter.getFileName(file) + "'.");
+                if (log.isWarnEnabled()) log.warn("Skipping unreadable file/directory '" + AbstractBulkFilesystemImporter.getFileName(file) + "'.");
                 
                 importStatus.incrementNumberOfUnreadableEntries();
             }

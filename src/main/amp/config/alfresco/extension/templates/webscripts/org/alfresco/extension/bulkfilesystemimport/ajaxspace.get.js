@@ -32,11 +32,9 @@ if (args.query === undefined || args.query.length == 0)
 else
 {
   var queryTerm   = args.query;
-// We should, in theory, be able to restrict by children of Company Home, but path-based searching has become such a disaster with the introduction of SOLR that it's not worth the time to get it to work.  We'll filter out non-children of Company Home ourselves.  #fail
-//  var luceneQuery = 'TYPE:"cm\\:folder" AND NOT TYPE:"wca\\:webfolder" AND PATH:"app\\:company\\_home//*" AND @cm\\:name:"' + queryTerm + '*"';
-  var luceneQuery = 'TYPE:"cm\\:folder" AND NOT TYPE:"wca\\:webfolder" AND @cm\\:name:"' + queryTerm + '*"';
+  var luceneQuery = 'TYPE:"cm\\:folder" AND NOT TYPE:"wca\\:webfolder" AND PATH:"/app\\:company\\_home//*" AND @cm\\:name:"' + queryTerm + '*"';
 
-  logger.log("About to execute luceneQuery: " + luceneQuery)
+  logger.log("About to execute luceneQuery: " + luceneQuery);
 
   var nodes = search.luceneSearch("workspace://SpacesStore", luceneQuery);
   

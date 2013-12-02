@@ -370,7 +370,7 @@ public abstract class AbstractBulkFilesystemImporter
         
         for (final ImportableItem importableItem : importableItems)
         {
-            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
             
             result.get(currentBatch).add(importableItem);
             currentBatchWeight += importableItem.weight();
@@ -400,7 +400,7 @@ public abstract class AbstractBulkFilesystemImporter
         {
             for (final List<ImportableItem> batch : batches)
             {
-                if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
                 
                 result.addAll(importBatchInTxn(target, sourceRoot, batch, replaceExisting, inPlaceImport));
             }
@@ -450,7 +450,7 @@ public abstract class AbstractBulkFilesystemImporter
         
         for (final ImportableItem importableItem : batch)
         {
-            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
             
             NodeRef nodeRef = importImportableItem(target, sourcePath, importableItem, replaceExisting, inPlaceImport);
             
@@ -625,7 +625,7 @@ public abstract class AbstractBulkFilesystemImporter
         
         for (final ImportableItem.VersionedContentAndMetadata versionEntry : importableItem.getVersionEntries())
         {
-            if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
             
             Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
             MetadataLoader.Metadata   metadata          = loadMetadata(importableItem.getFileType(), versionEntry);
@@ -763,7 +763,7 @@ public abstract class AbstractBulkFilesystemImporter
         {
             for (final QName aspect : metadata.getAspects())
             {
-                if (Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
                 
                 if (log.isDebugEnabled()) log.debug("Attaching aspect '" + String.valueOf(aspect) + "' to node '" + String.valueOf(nodeRef) + "'.");
                 

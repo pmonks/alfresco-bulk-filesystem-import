@@ -7,5 +7,5 @@
   <entry key="cm:description">A file with multi-valued properties, using a custom separator.</entry>
   <entry key="cm:created">1901-01-01T12:34:56.789+10:00</entry>
   <!-- Note: The following needs to be set to the NodeRefs of two tags in your Alfresco installation -->
-  <entry key="cm:taggable">workspace://SpacesStore/6d4aa1ad-18f2-4010-a85b-0dcd4aebdc97 # workspace://SpacesStore/deab3c56-de0c-45c2-9983-4821f16a878c</entry>
+  <entry key="cm:taggable">workspace://SpacesStore/96d25dba-92db-49e6-9d91-739f9736678a # workspace://SpacesStore/54425857-5afb-46ec-96ec-4c6b76a9c70e</entry>
 </properties>

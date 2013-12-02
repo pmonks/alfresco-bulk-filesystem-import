@@ -23,6 +23,7 @@ import java.io.File;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.logging.Log;
@@ -102,16 +103,16 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
         // Kill the thread pool - the monitoring thread performs the final status update once everything is down
         if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
         List<Runnable> remainingUnitsOfWork = threadPool.shutdownNow();
-        if (log.isDebugEnabled()) log.debug("Thread pool shutdown, " + remainingUnitsOfWork == null ? 0 : remainingUnitsOfWork.size() + " units of work discarded.");
+        if (log.isInfoEnabled()) log.info("Thread pool shutdown requested, " + remainingUnitsOfWork == null ? 0 : remainingUnitsOfWork.size() + " units of work discarded.");
     }
     
     
     /**
      * Spring "lookup method" that will return a new ThreadPoolExecutor each time it's called.
      * We have to go to these extremes because:
-     * 1. In some cases we need a way to forcibly stop an entire import (including all of the worker threads)
+     * 1. We need to be able to stop an entire import (including all of the worker threads)
      * 2. Java's ExecutorService framework only offers one way to do this: shutting down the entire ExecutorService
-     * 3. Once shutdown, a Java ExecutorService can't be restarted
+     * 3. Once shutdown, a Java ExecutorService can't be restarted / reused
      * 
      * Ergo this stuff...  *sigh*
      * 
@@ -179,26 +180,39 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     {
                         if (numberOfActiveUnitsOfWork.get() == 0 && threadPool.getQueue().isEmpty())
                         {
-                            if (!importStatus.getProcessingState().equals(ProcessingState.FAILED))
+                            if (!threadPool.isShutdown() && !threadPool.isTerminating())
                             {
-                                if (importStatus.isStopping())
-                                {
-                                    importStatus.importStopped();
-                                    if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' stopped.");
-                                }
-                                else
-                                {
-                                    importStatus.importSucceeded();
-                                    if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' succeeded.");
-                                }
+                                // Gracefully shutdown the thread pool (i.e. finish all in-progress work)
+                                if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
+                                threadPool.shutdown();
                             }
                             
-                            logStatus(importStatus);
-                            
-                            break; // Drop out of the while loop, thereby terminating the thread
+                            // Wait 5 minutes for the thread pool to shutdown
+                            // If we timeout, go around the while loop and await termination again
+                            if (threadPool.awaitTermination(5, TimeUnit.MINUTES))
+                            {
+                                // Thread pool is fully shutdown - set the final status of the import
+                                if (!importStatus.getProcessingState().equals(ProcessingState.FAILED))
+                                {
+                                    if (importStatus.isStopping())
+                                    {
+                                        importStatus.importStopped();
+                                        if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' stopped.");
+                                    }
+                                    else
+                                    {
+                                        importStatus.importSucceeded();
+                                        if (log.isInfoEnabled()) log.info("Bulk import from '" + sourceRoot + "' succeeded.");
+                                    }
+
+                                    logStatus(importStatus);
+                                    break; // Drop out of the while loop, thereby terminating the completion monitoring thread
+                                }
+                            }
                         }
                         else
                         {
+                            // Still working, so sleep for a bit before checking again
                             Thread.sleep(completionCheckIntervalMs);
                         }
                     }
@@ -206,15 +220,6 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                 catch (final InterruptedException ie)
                 {
                     if (log.isDebugEnabled()) log.debug(Thread.currentThread().getName() + " was interrupted.", ie);
-                }
-                finally
-                {
-                    if (!threadPool.isShutdown() && !threadPool.isTerminating())
-                    {
-                        // Kill the thread pool before terminating
-                        if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
-                        threadPool.shutdown();
-                    }
                 }
             }
         };
@@ -298,16 +303,19 @@ public abstract class MultiThreadedBulkFilesystemImporter   // Note: class is ab
                     rootCause = rootCause.getCause();
                 }
                 
+                String rootCauseClassName = rootCause.getClass().getName();
+                
                 if (importStatus.getProcessingState().equals(ProcessingState.STOPPING) &&
-                    (rootCause instanceof InterruptedException || rootCause instanceof ClosedByInterruptException))
+                    (rootCause instanceof InterruptedException ||
+                     rootCause instanceof ClosedByInterruptException ||
+                     "com.hazelcast.core.RuntimeInterruptedException".equals(rootCauseClassName)))  // For compatibility across 4.x *sigh*
                 {
-                    // We were shutting down and an interrupted exception was thrown
+                    // A stop import was requested
                     if (log.isDebugEnabled()) log.debug(Thread.currentThread().getName() + " was interrupted.", t);
-                    threadPool.shutdownNow();  // Shouldn't be needed, but just in case...
                 }
                 else
                 {
-                    // Log the exception and kill the entire import
+                    // An unexpected exception - log it and kill the import
                     log.error("Bulk import from '" + getFileName(source) + "' failed.", t);
                     
                     if (log.isDebugEnabled()) log.debug("Shutting down worker thread pool.");
