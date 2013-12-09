@@ -3,11 +3,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.alfresco.extension</groupId>
-  <artifactId>alfresco-bulk-filesystem-import</artifactId>
+  <artifactId>alfresco-bulk-import</artifactId>
   <version>2.0-SNAPSHOT</version>
   <packaging>amp</packaging>
-  <name>Alfresco Bulk Filesystem Import</name>
-  <description>Alfresco Bulk Filesystem Import for Alfresco v4.0, v4.1 and v4.2.</description>
+  <name>Alfresco Bulk Import</name>
+  <description>Alfresco Bulk Import for Alfresco v4.0, v4.1 and v4.2.</description>
 
   <licenses>
     <license>
