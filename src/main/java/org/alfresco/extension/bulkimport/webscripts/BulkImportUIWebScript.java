@@ -31,7 +31,7 @@ import org.alfresco.extension.bulkimport.BulkImporter;
 
 
 /**
- * Web Script class that invokes a BulkFilesystemImporter implementation.
+ * Web Script class that invokes a BulkImporter implementation.
  *
  * @author Peter Monks (peter.monks@alfresco.com)
  */

@@ -34,6 +34,7 @@ import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptException;
 import org.alfresco.repo.model.Repository;
+import org.alfresco.repo.nodelocator.CompanyHomeNodeLocator;
 import org.alfresco.service.ServiceRegistry;
 import org.alfresco.service.cmr.model.FileNotFoundException;
 import org.alfresco.service.cmr.repository.NodeRef;
@@ -41,7 +42,7 @@ import org.alfresco.extension.bulkimport.BulkImporter;
 
 
 /**
- * Web Script class that invokes a BulkFilesystemImporter implementation.
+ * Web Script class that invokes a BulkImporter implementation.
  *
  * @author Peter Monks (peter.monks@alfresco.com)
  */
@@ -66,23 +67,19 @@ public class BulkImportWebScript
     private final static String COMPANY_HOME_PATH = "/" + COMPANY_HOME_NAME;
     
     // Attributes
-    private final ServiceRegistry        serviceRegistry;
-    private final Repository             repository;
-    private final BulkImporter importer;
+    private final ServiceRegistry serviceRegistry;
+    private final BulkImporter    importer;
     
     
-    public BulkImportWebScript(final ServiceRegistry        serviceRegistry,
-                                         final Repository             repository,
-                                         final BulkImporter importer)
+    public BulkImportWebScript(final ServiceRegistry serviceRegistry,
+                               final BulkImporter    importer)
     {
         // PRECONDITIONS
         assert serviceRegistry != null : "serviceRegistry must not be null.";
-        assert repository      != null : "repository must not be null."; 
         assert importer        != null : "importer must not be null.";
         
         //BODY
         this.serviceRegistry = serviceRegistry;
-        this.repository      = repository;
         this.importer        = importer;
     }
     
@@ -176,7 +173,7 @@ public class BulkImportWebScript
         throws FileNotFoundException
     {
         NodeRef result          = null;
-        NodeRef companyHome     = repository.getCompanyHome();
+        NodeRef companyHome     = serviceRegistry.getNodeLocatorService().getNode(CompanyHomeNodeLocator.NAME, null, null);
         String  cleanTargetPath = targetPath.replaceAll("/+", "/");
         
         if (cleanTargetPath.startsWith(COMPANY_HOME_PATH))

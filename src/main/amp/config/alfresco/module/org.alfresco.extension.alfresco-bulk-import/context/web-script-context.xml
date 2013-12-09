@@ -20,8 +20,7 @@
         class="org.alfresco.extension.bulkimport.webscripts.BulkImportWebScript"
         parent="webscript">
     <constructor-arg index="0" ref="ServiceRegistry" />
-    <constructor-arg index="1" ref="repositoryHelper" />
-    <constructor-arg index="2" ref="bit-importer" /> 
+    <constructor-arg index="1" ref="bit-importer" />
   </bean>
 
   <bean id="webscript.org.alfresco.extension.bulkimport.status.get"
