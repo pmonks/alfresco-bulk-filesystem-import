@@ -5,5 +5,5 @@
   <entry key="cm:title">This file is tagged.</entry>
   <entry key="cm:description">This file has been tagged.</entry>
   <!-- Note: The following needs to be set to the NodeRef of a tag in your Alfresco installation -->
-  <entry key="cm:taggable">workspace://SpacesStore/b62795bc-78e0-4d9d-a7fc-36573d999f02</entry>
+  <entry key="cm:taggable">workspace://SpacesStore/eab0c75d-9ddc-4680-af85-754e3183205b</entry>
 </properties>
