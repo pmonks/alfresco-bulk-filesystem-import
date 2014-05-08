@@ -266,8 +266,8 @@ public final class DirectoryAnalyserImpl
 
         if (matcher.matches())
         {
-            String majorVersionStr = matcher.group(1);
-            String minorVersionStr = matcher.group(3);
+            String majorVersionStr = matcher.group(2);
+            String minorVersionStr = matcher.group(4);
             
             int majorVersion = Integer.parseInt(majorVersionStr);
             int minorVersion = 0;
