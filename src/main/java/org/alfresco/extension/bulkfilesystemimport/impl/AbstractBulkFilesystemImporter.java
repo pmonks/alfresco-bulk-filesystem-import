@@ -726,10 +726,24 @@ public abstract class AbstractBulkFilesystemImporter
         
         String normalisedFilename         = contentAndMetadata.getContentFile().getAbsolutePath().replaceAll("\\\\", "/");  // Normalise all paths to be Unix-delimited
         String normalisedContentStoreRoot = configuredContentStore.getRootLocation().replaceAll("\\\\", "/");
-
+        
+        // Ensure content store root ends with a single / character
+        if (!normalisedContentStoreRoot.endsWith("/"))
+        {
+            normalisedContentStoreRoot = normalisedContentStoreRoot + "/";
+        }
+        
         if (log.isDebugEnabled()) log.debug("Constructing content URL for '" + normalisedFilename + "'. Content store is located at '" + normalisedContentStoreRoot + "'.");
         
-        String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + normalisedFilename.replace(normalisedContentStoreRoot + "/", "");
+        // If, after normalisation, the filename doesn't start with the content store root, something is badly wrong.
+        if (!normalisedFilename.startsWith(normalisedContentStoreRoot))
+        {
+            throw new IllegalStateException("File '" + normalisedFilename + "' is not within the contentstore '" + normalisedContentStoreRoot + "', so it can't be in-place imported.");
+        }
+        
+        String contentStoreRelativeFilename = normalisedFilename.replace(normalisedContentStoreRoot, "");
+
+        String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + contentStoreRelativeFilename;
         String mimeType   = mimeTypeService.guessMimetype(contentAndMetadata.getContentFile().getName());
         String encoding   = DEFAULT_TEXT_ENCODING;
 
