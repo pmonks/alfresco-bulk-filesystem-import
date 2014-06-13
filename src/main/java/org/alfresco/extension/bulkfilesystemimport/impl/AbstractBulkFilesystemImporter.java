@@ -36,6 +36,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
@@ -719,13 +720,27 @@ public abstract class AbstractBulkFilesystemImporter
         importImportableItemMetadata(nodeRef, importableItem.getHeadRevision().getContentFile(), metadata);
     }
     
+    // Workaround for https://issues.alfresco.com/jira/browse/MNT-11702
+    private final String normaliseFilename(final String filename)
+    {
+        String result = null;
+        
+        if (filename != null)
+        {
+            result = filename.replaceAll("\\\\", "/");  // Normalise all path separators to Unix-style (note: quadruple escaping is indeed required!)
+            result = result.replaceAll("/+", "/");      // De-dupe duplicate separators
+        }
+        
+        return(result);
+    }
+    
     
     private final ContentData buildContentProperty(final ImportableItem.ContentAndMetadata contentAndMetadata)
     {
         ContentData result = null;
         
-        String normalisedFilename         = contentAndMetadata.getContentFile().getAbsolutePath().replaceAll("\\\\", "/");  // Normalise all paths to be Unix-delimited
-        String normalisedContentStoreRoot = configuredContentStore.getRootLocation().replaceAll("\\\\", "/");
+        String normalisedFilename         = normaliseFilename(contentAndMetadata.getContentFile().getAbsolutePath());
+        String normalisedContentStoreRoot = normaliseFilename(configuredContentStore.getRootLocation());
         
         // Ensure content store root ends with a single / character
         if (!normalisedContentStoreRoot.endsWith("/"))
@@ -741,7 +756,7 @@ public abstract class AbstractBulkFilesystemImporter
             throw new IllegalStateException("File '" + normalisedFilename + "' is not within the contentstore '" + normalisedContentStoreRoot + "', so it can't be in-place imported.");
         }
         
-        String contentStoreRelativeFilename = normalisedFilename.replace(normalisedContentStoreRoot, "");
+        String contentStoreRelativeFilename = normalisedFilename.substring(normalisedContentStoreRoot.length());
 
         String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + contentStoreRelativeFilename;
         String mimeType   = mimeTypeService.guessMimetype(contentAndMetadata.getContentFile().getName());
