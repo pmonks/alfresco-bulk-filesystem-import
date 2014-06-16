@@ -596,6 +596,7 @@ public abstract class AbstractBulkFilesystemImporter
     {
         int result = 0;
         
+        // Import versions
         if (importableItem.hasVersionEntries())
         {
             // If cm:versionable isn't listed as one of the aspects for this node, add it - cm:versionable is required for nodes that have versions
@@ -608,9 +609,27 @@ public abstract class AbstractBulkFilesystemImporter
             result = importContentVersions(nodeRef, importableItem, inPlaceImport);
         }
         
-        if (log.isDebugEnabled()) log.debug("Creating head revision of node " + String.valueOf(nodeRef));
+        ImportableItem.ContentAndMetadata headRevision = importableItem.getHeadRevision();
         
-        importContentAndMetadata(nodeRef, importableItem.getHeadRevision(), inPlaceImport, metadata);
+        if (headRevision.contentFileExists() || headRevision.metadataFileExists())
+        {
+            if (log.isDebugEnabled()) log.debug("Creating head revision of node '" + String.valueOf(nodeRef) + "'.");
+            
+            importContentAndMetadata(nodeRef, headRevision, inPlaceImport, metadata);
+            
+            if (metadata.getAspects().contains(ContentModel.ASPECT_VERSIONABLE))
+            {
+                // Stamp the final version again, to workaround the Share bug whereby versions that aren't stamped as a version don't show up
+                // Note: this will result in the final version being duplicated in Explorer, but no one should be using that...
+                Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
+                versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                versionService.createVersion(nodeRef, versionProperties);
+            }
+        }
+        else
+        {
+            if (log.isDebugEnabled()) log.debug("No head revision for node '" + String.valueOf(nodeRef) + "'.");
+        }
         
         return(result);
     }
