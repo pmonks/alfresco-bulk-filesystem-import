@@ -36,6 +36,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.lang.SystemUtils;
 
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.ContentStore;
@@ -103,6 +104,7 @@ public abstract class AbstractBulkFilesystemImporter
     
     protected final BulkImportStatusImpl  importStatus;
     protected final DataDictionaryBuilder dataDictionaryBuilder;
+
 
     private DirectoryAnalyser  directoryAnalyser = null;
     private List<ImportFilter> importFilters     = null;
@@ -197,7 +199,15 @@ public abstract class AbstractBulkFilesystemImporter
         String  storeRootLocation = fileContentStore.getRootLocation();
         String  sourcePath        = source.getAbsolutePath();   // Note: we don't use getCanonicalPath here because it dereferences symlinks (which we don't want)
         
-        result = sourcePath.startsWith(storeRootLocation);
+        // Case insensitive comparison on Windows
+        if (SystemUtils.IS_OS_WINDOWS)
+        {
+            result = sourcePath.toLowerCase().startsWith(storeRootLocation.toLowerCase());
+        }
+        else
+        {
+            result = sourcePath.startsWith(storeRootLocation);
+        }
         
         return(result);
     }
@@ -748,6 +758,12 @@ public abstract class AbstractBulkFilesystemImporter
         {
             result = filename.replaceAll("\\\\", "/");  // Normalise all path separators to Unix-style (note: quadruple escaping is indeed required!)
             result = result.replaceAll("/+", "/");      // De-dupe duplicate separators
+            
+            // Ensure case insensitive comparison on Windows
+            if (SystemUtils.IS_OS_WINDOWS)
+            {
+                result = result.toLowerCase();
+            }
         }
         
         return(result);
