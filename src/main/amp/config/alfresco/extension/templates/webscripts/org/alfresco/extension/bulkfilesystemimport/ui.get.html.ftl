@@ -54,7 +54,7 @@
     <table cellpadding="5">
       <tr>
         <td><img src="${url.context}/images/logo/AlfrescoLogo32.png" alt="Alfresco" /></td>
-        <td><strong>Bulk Filesystem Import Tool v1.3.4 (Community maintained)</strong><br/>
+        <td><strong>Bulk Filesystem Import Tool v1.3.5-SNAPSHOT (Community maintained)</strong><br/>
             Alfresco ${server.edition} v${server.version}</td>
       </tr>
     </table>
