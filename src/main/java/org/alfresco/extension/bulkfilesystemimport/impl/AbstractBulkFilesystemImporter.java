@@ -1,26 +1,23 @@
 /*
- * Copyright (C) 2005-2011 Alfresco Software Limited.
+ * Copyright (C) 2007-2013 Peter Monks.
+ *               2010      Martin Bergljung Fixed issue #4.
+ *               2010      Stefan Topfstedt Fixed issues #20, #24.
+ *               2011      Ryan McVeigh     Fixed issues #18, #62.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
- * As a special exception to the terms and conditions of version 2.0 of 
- * the GPL, you may redistribute this Program in connection with Free/Libre 
- * and Open Source Software ("FLOSS") applications as described in Alfresco's 
- * FLOSS exception.  You should have received a copy of the text describing 
- * the FLOSS exception, and it is also available here: 
- * http://www.alfresco.com/legal/licensing"
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * This file is part of an unsupported extension to Alfresco.
+ * 
  */
 
 package org.alfresco.extension.bulkfilesystemimport.impl;
@@ -39,21 +36,24 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.lang.SystemUtils;
 
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
 import org.alfresco.repo.content.filestore.FileContentStore;
 import org.alfresco.repo.policy.BehaviourFilter;
+import org.alfresco.repo.tenant.AbstractTenantRoutingContentStore;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
 import org.alfresco.service.ServiceRegistry;
-import org.alfresco.service.cmr.model.FileExistsException;
+import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.model.FileFolderService;
 import org.alfresco.service.cmr.model.FileInfo;
 import org.alfresco.service.cmr.model.FileNotFoundException;
 import org.alfresco.service.cmr.repository.ContentData;
+import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.alfresco.service.cmr.repository.InvalidNodeRefException;
 import org.alfresco.service.cmr.repository.MimetypeService;
@@ -65,7 +65,6 @@ import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.util.Pair;
-
 import org.alfresco.extension.bulkfilesystemimport.AnalysedDirectory;
 import org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter;
 import org.alfresco.extension.bulkfilesystemimport.BulkImportStatus;
@@ -74,6 +73,7 @@ import org.alfresco.extension.bulkfilesystemimport.ImportableItem;
 import org.alfresco.extension.bulkfilesystemimport.MetadataLoader;
 import org.alfresco.extension.bulkfilesystemimport.ImportFilter;
 import org.alfresco.extension.bulkfilesystemimport.impl.BulkImportStatusImpl.NodeState;
+import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
 
 
 /**
@@ -88,19 +88,23 @@ public abstract class AbstractBulkFilesystemImporter
 {
     private final static Log log = LogFactory.getLog(AbstractBulkFilesystemImporter.class);
     
-    private final static String OS_FILE_SEPARATOR     = System.getProperty("file.separator");
-    private final static int    DEFAULT_BATCH_WEIGHT  = 100;
-    private final static String DEFAULT_TEXT_ENCODING = "UTF-8";
+    private final static int    DEFAULT_BATCH_WEIGHT   = 100;
+    private final static String DEFAULT_TEXT_ENCODING  = "UTF-8";
+    private final static int    MAX_CONTENT_URL_LENGTH = 255;
 
     protected final ServiceRegistry      serviceRegistry;
     protected final BehaviourFilter      behaviourFilter;
     protected final ContentStore         configuredContentStore;
     protected final FileFolderService    fileFolderService;
     protected final NodeService          nodeService;
+    protected final ContentService       contentService;
     protected final VersionService       versionService;
     protected final MimetypeService      mimeTypeService;
+    protected final DictionaryService    dictionaryService;
     
-    protected final BulkImportStatusImpl importStatus;
+    protected final BulkImportStatusImpl  importStatus;
+    protected final DataDictionaryBuilder dataDictionaryBuilder;
+
 
     private DirectoryAnalyser  directoryAnalyser = null;
     private List<ImportFilter> importFilters     = null;
@@ -108,10 +112,11 @@ public abstract class AbstractBulkFilesystemImporter
     private int                batchWeight       = DEFAULT_BATCH_WEIGHT;
 
 
-    protected AbstractBulkFilesystemImporter(final ServiceRegistry      serviceRegistry,
-                                             final BehaviourFilter      behaviourFilter,
-                                             final ContentStore         configuredContentStore,
-                                             final BulkImportStatusImpl importStatus)
+    protected AbstractBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
+                                             final BehaviourFilter       behaviourFilter,
+                                             final ContentStore          configuredContentStore,
+                                             final BulkImportStatusImpl  importStatus,
+                                             final DataDictionaryBuilder dataDictionaryBuilder)
     {
         this.serviceRegistry        = serviceRegistry;
         this.behaviourFilter        = behaviourFilter;
@@ -119,11 +124,15 @@ public abstract class AbstractBulkFilesystemImporter
         
         this.fileFolderService = serviceRegistry.getFileFolderService();
         this.nodeService       = serviceRegistry.getNodeService();
+        this.contentService    = serviceRegistry.getContentService();
         this.versionService    = serviceRegistry.getVersionService();
         this.mimeTypeService   = serviceRegistry.getMimetypeService();
+        this.dictionaryService = serviceRegistry.getDictionaryService();
         
         this.importStatus      = importStatus;
-        this.importFilters     = new ArrayList<ImportFilter>();
+        
+        this.dataDictionaryBuilder = dataDictionaryBuilder;
+        this.importFilters         = new ArrayList<ImportFilter>();
     }
     
     public final void setDirectoryAnalyser(final DirectoryAnalyser directoryAnalyser)
@@ -162,32 +171,84 @@ public abstract class AbstractBulkFilesystemImporter
         validateNodeRefIsWritableSpace(target);
         validateFileIsReadableDirectory(source);
         
+        if (log.isDebugEnabled()) log.debug("---- Data Dictionary:\n" + dataDictionaryBuilder.toString());
+        
         bulkImportImpl(target, source, replaceExisting, isInContentStore(source));
     }
     
     
-    private final boolean isInContentStore(final File source)
+    /**
+     * @see org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter#stopImport()
+     */
+    @Override
+    public void stopImport()
     {
-        boolean result = false;
+        throw new IllegalStateException("Stopping an import is not supported by this implementation.");
+    }
+    
+    
+    /**
+     * Determines whether the given file is located in the given file content store.
+     * @param fileContentStore The file content store to check <i>(must not be null)</i>.
+     * @param source           The file to check <i>(must not be null)</i>.
+     * @return True if the given file is in an Alfresco managed content store, false otherwise.
+     */
+    private final boolean isInContentStore(final FileContentStore fileContentStore, final File source)
+    {
+        boolean result            = false;
+        String  storeRootLocation = fileContentStore.getRootLocation();
+        String  sourcePath        = source.getAbsolutePath();   // Note: we don't use getCanonicalPath here because it dereferences symlinks (which we don't want)
         
-        // Ignore non-file content stores
-        if (configuredContentStore instanceof FileContentStore)
+        // Case insensitive comparison on Windows
+        if (SystemUtils.IS_OS_WINDOWS)
         {
-            String storeRootLocation = configuredContentStore.getRootLocation();
-            String sourcePath        = null;
-            
-            try
-            {
-                sourcePath = source.getCanonicalPath();
-            }
-            catch (final IOException ioe)
-            {
-                sourcePath = source.getAbsolutePath();
-            }
-            
+            result = sourcePath.toLowerCase().startsWith(storeRootLocation.toLowerCase());
+        }
+        else
+        {
             result = sourcePath.startsWith(storeRootLocation);
         }
         
+        return(result);
+    }
+
+
+    /**
+     * Determines whether the given file is already located in an Alfresco managed content store.  Used to determine
+     * whether to perform a streaming or in-place import.
+     * 
+     * @param source The file to test.  Typically this would be the source directory for the import <i>(must not be null)</i>.
+     * @return True if the given file is in an Alfresco managed content store, false otherwise.
+     */
+    private final boolean isInContentStore(final File source)
+    {
+        boolean result = false;
+
+        if (configuredContentStore instanceof FileContentStore)
+        {
+            result = isInContentStore((FileContentStore)configuredContentStore, source);
+        }
+        // It's a shame org.alfresco.repo.content.AbstractRoutingContentStore.getAllStores() is protected - that limits the applicability of this solution 
+        else if (configuredContentStore instanceof AbstractTenantRoutingContentStore)
+        {
+            List<ContentStore> backingStores = ((AbstractTenantRoutingContentStore)configuredContentStore).getAllStores();
+            
+            if (backingStores != null)
+            {
+                for (final ContentStore store : backingStores)
+                {
+                    if (store instanceof FileContentStore)
+                    {
+                        if (isInContentStore((FileContentStore)store, source))
+                        {
+                            result = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         return(result);
     }
 
@@ -235,6 +296,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                               final File    source,
                                                               final boolean replaceExisting,
                                                               final boolean inPlaceImport)
+        throws InterruptedException
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
         
@@ -242,9 +304,11 @@ public abstract class AbstractBulkFilesystemImporter
         
         // PHASE 1: analyse the source directory
         final AnalysedDirectory          analysedDirectory       = directoryAnalyser.analyseDirectory(source);
-         
+        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+        
         // PHASE 2: filter ImportableItems from the source directory
         final List<ImportableItem>       filteredImportableItems = filterImportableItems(analysedDirectory.importableItems);
+        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
         
         // PHASE 3: batch ImportableItems
         final List<List<ImportableItem>> batchedImportableItems  = batchImportableItems(filteredImportableItems);
@@ -255,14 +319,18 @@ public abstract class AbstractBulkFilesystemImporter
                                             "\n\t" + filteredImportableItems.size()           + " filtered importable item" + (filteredImportableItems.size()           == 1 ? "" : "s")  +
                                             "\n\t" + batchedImportableItems.size()            + " batch"                    + (batchedImportableItems.size()            == 1 ? "" : "es"));
         
+        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+        
         // PHASE 4: load the batches
         result.addAll(importImportableItemBatches(target, sourceRoot, batchedImportableItems, replaceExisting, inPlaceImport));
+        if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
         
         return(result);
     }
     
     
     private final List<ImportableItem> filterImportableItems(final List<ImportableItem> importableItems)
+        throws InterruptedException
     {
         List<ImportableItem> result = new ArrayList<ImportableItem>();
 
@@ -277,6 +345,8 @@ public abstract class AbstractBulkFilesystemImporter
             {
                 for (final ImportableItem importableItem : importableItems)
                 {
+                    if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                    
                     boolean filterImportableItem = false;
                     
                     for (final ImportFilter filter : importFilters)
@@ -301,6 +371,7 @@ public abstract class AbstractBulkFilesystemImporter
     
     
     private final List<List<ImportableItem>> batchImportableItems(final List<ImportableItem> importableItems)
+        throws InterruptedException
     {
         List<List<ImportableItem>> result             = new ArrayList<List<ImportableItem>>();
         int                        currentBatch       = 0;
@@ -310,6 +381,8 @@ public abstract class AbstractBulkFilesystemImporter
         
         for (final ImportableItem importableItem : importableItems)
         {
+            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            
             result.get(currentBatch).add(importableItem);
             currentBatchWeight += importableItem.weight();
             
@@ -330,7 +403,7 @@ public abstract class AbstractBulkFilesystemImporter
                                                                         final List<List<ImportableItem>> batches,
                                                                         final boolean                    replaceExisting,
                                                                         final boolean                    inPlaceImport)
-                                                                        
+        throws InterruptedException
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
         
@@ -338,14 +411,9 @@ public abstract class AbstractBulkFilesystemImporter
         {
             for (final List<ImportableItem> batch : batches)
             {
+                if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                
                 result.addAll(importBatchInTxn(target, sourceRoot, batch, replaceExisting, inPlaceImport));
-
-                // If we're running on a background thread that's been interrupted, terminate early
-                if (Thread.interrupted())
-                {
-                    if (log.isWarnEnabled()) log.warn(Thread.currentThread().getName() + " was interrupted while importing batches.  Terminating early.");
-                    break;
-                }
             }
         }
         
@@ -366,6 +434,7 @@ public abstract class AbstractBulkFilesystemImporter
             {
                 @Override
                 public List<Pair<NodeRef, File>> execute()
+                    throws Exception
                 {
                     // Disable the auditable aspect's behaviours for this transaction, to allow creation & modification dates to be set 
                     behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
@@ -386,17 +455,20 @@ public abstract class AbstractBulkFilesystemImporter
                                                         final List<ImportableItem> batch,
                                                         final boolean              replaceExisting,
                                                         final boolean              inPlaceImport)
+        throws InterruptedException
     {
         List<Pair<NodeRef, File>> result = new ArrayList<Pair<NodeRef, File>>();
         
         for (final ImportableItem importableItem : batch)
         {
+            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            
             NodeRef nodeRef = importImportableItem(target, sourcePath, importableItem, replaceExisting, inPlaceImport);
             
             // If it's a directory, add it to the list of sub-directories to be processed
             if (nodeRef != null &&
                 importableItem.getHeadRevision().contentFileExists() &&
-                ImportableItem.FileType.DIRECTORY.equals(importableItem.getHeadRevision().getContentFileType()))
+                ImportableItem.FileType.DIRECTORY.equals(importableItem.getFileType()))
             {
                 result.add(new Pair<NodeRef, File>(nodeRef, importableItem.getHeadRevision().getContentFile()));
             }
@@ -411,12 +483,12 @@ public abstract class AbstractBulkFilesystemImporter
                                                final ImportableItem   importableItem,
                                                final boolean          replaceExisting,
                                                final boolean          inPlaceImport)
-                                               
+        throws InterruptedException
     {
         if (log.isDebugEnabled()) log.debug("Importing " + String.valueOf(importableItem));
 
         NodeRef                             result      = null;
-        MetadataLoader.Metadata             metadata    = loadMetadata(importableItem.getHeadRevision());
+        MetadataLoader.Metadata             metadata    = loadMetadata(importableItem.getFileType(), importableItem.getHeadRevision());
         Triple<NodeRef, Boolean, NodeState> node        = createOrFindNode(target, importableItem, replaceExisting, metadata);
         boolean                             isDirectory = node.getSecond() == null ? false : node.getSecond();  // Watch out for NPEs during unboxing!
         NodeState                           nodeState   = node.getThird();
@@ -456,60 +528,37 @@ public abstract class AbstractBulkFilesystemImporter
                                                                        final boolean                 replaceExisting,
                                                                        final MetadataLoader.Metadata metadata)
     {
-        Triple<NodeRef, Boolean, NodeState> result      = null;
-        boolean                             isDirectory = false;
-        NodeState                           nodeState   = replaceExisting ? NodeState.REPLACED : NodeState.SKIPPED;
-        String                              nodeName    = getImportableItemName(importableItem, metadata);
-        NodeRef                             nodeRef     = null;
+        Triple<NodeRef, Boolean, NodeState> result           = null;
+        boolean                             isDirectory      = false;
+        NodeState                           nodeState        = replaceExisting ? NodeState.REPLACED : NodeState.SKIPPED;
+        String                              nodeName         = getImportableItemName(importableItem, metadata);
+        NodeRef                             nodeRef          = null;
+        QName                               childQName       = QName.createQName(metadata.getNamespace(), QName.createValidLocalName(nodeName));
+        QName                               parentAssocQName = metadata.getParentAssoc();
         
-        //####TODO: handle this more elegantly
-        if (nodeName == null)
-        {
-            throw new IllegalStateException("Unable to determine node name for " + String.valueOf(importableItem));
-        }
-
-        if (log.isDebugEnabled()) log.debug("Searching for node with name '" + nodeName + "' within node '" + target.toString() + "'.");
-        nodeRef = fileFolderService.searchSimple(target, nodeName);
+        if (log.isDebugEnabled()) log.debug("Searching for node with name '" + nodeName + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "'.");
+        nodeRef = nodeService.getChildByName(target, parentAssocQName, nodeName);
         
         // If we didn't find an existing item, create a new node in the repo. 
         if (nodeRef == null)
         {
-            // But only if the content file exists - we don't create new nodes based on metadata-only importableItems
-            if (importableItem.getHeadRevision().contentFileExists())
-            {
-                isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getHeadRevision().getContentFileType());
-                
-                try
-                {
-                    if (log.isDebugEnabled()) log.debug("Creating new node of type '" + metadata.getType().toString() + "' with name '" + nodeName + "' within node '" + target.toString() + "'.");
-                    nodeRef   = fileFolderService.create(target, nodeName, metadata.getType()).getNodeRef();
-                    nodeState = NodeState.CREATED;
-                }
-                catch (final FileExistsException fee)
-                {
-                    if (log.isWarnEnabled()) log.warn("Node with name '" + nodeName + "' within node '" + target.toString() + "' was created concurrently to the bulk import.  Skipping importing it.", fee);
-                    nodeRef   = null;
-                    nodeState = NodeState.SKIPPED;
-                }
-            }
-            else
-            {
-                if (log.isDebugEnabled()) log.debug("Skipping creation of new node '" + nodeName + "' within node '" + target.toString() + "' since it doesn't have a content file.");
-                nodeRef   = null;
-                nodeState = NodeState.SKIPPED;
-            }
+            isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getFileType());
+            
+            if (log.isDebugEnabled()) log.debug("Creating new node of type '" + String.valueOf(metadata.getType()) + "' with qname '" + String.valueOf(childQName) + "' within node '" + String.valueOf(target) + "' with parent association '" + String.valueOf(parentAssocQName) + "'.");
+            nodeRef   = nodeService.createNode(target, parentAssocQName, childQName, metadata.getType()).getChildRef();
+            nodeState = NodeState.CREATED;
         }
         // We found the node in the repository.  Make sure we return the NodeRef, so that recursive loading works (we need the NodeRef of all sub-spaces, even if we didn't create them).
         else
         {
             if (replaceExisting)
             {
-                boolean targetNodeIsSpace = fileFolderService.getFileInfo(nodeRef).isFolder();
+                boolean targetNodeIsSpace = dictionaryService.isSubClass(nodeService.getType(nodeRef), ContentModel.TYPE_FOLDER);
                 
                 if (importableItem.getHeadRevision().contentFileExists())
                 {
                     // If the source file exists, ensure that the target node is of the same type (i.e. file or folder) as it. 
-                    isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getHeadRevision().getContentFileType());
+                    isDirectory = ImportableItem.FileType.DIRECTORY.equals(importableItem.getFileType());
                 
                     if (isDirectory != targetNodeIsSpace)
                     {
@@ -529,7 +578,7 @@ public abstract class AbstractBulkFilesystemImporter
                     if (metadata.getType() != null)
                     {
                         // Finally, specialise the type.
-                        if (log.isDebugEnabled()) log.debug("Specialising type of node '" + nodeRef.toString() + "' to '" + String.valueOf(metadata.getType()) + "'.");
+                        if (log.isDebugEnabled()) log.debug("Specialising type of node '" + String.valueOf(nodeRef) + "' to '" + String.valueOf(metadata.getType()) + "'.");
                         nodeService.setType(nodeRef, metadata.getType());
                     }
                     
@@ -538,7 +587,7 @@ public abstract class AbstractBulkFilesystemImporter
             }
             else
             {
-                if (log.isDebugEnabled()) log.debug("Found content node '" + nodeRef.toString() + "', but replaceExisting=false, so skipping it.");
+                if (log.isDebugEnabled()) log.debug("Found content node '" + String.valueOf(nodeRef) + "', but replaceExisting=false, so skipping it.");
                 nodeState = NodeState.SKIPPED;
             }
         }
@@ -553,49 +602,83 @@ public abstract class AbstractBulkFilesystemImporter
                                                final ImportableItem          importableItem,
                                                final boolean                 inPlaceImport, 
                                                final MetadataLoader.Metadata metadata)
+        throws InterruptedException
     {
         int result = 0;
         
+        // Import versions
         if (importableItem.hasVersionEntries())
         {
             // If cm:versionable isn't listed as one of the aspects for this node, add it - cm:versionable is required for nodes that have versions
             if (!metadata.getAspects().contains(ContentModel.ASPECT_VERSIONABLE))
             {
-                if (log.isWarnEnabled()) log.warn("Metadata for file '" + getFileName(importableItem.getHeadRevision().getContentFile()) + "' was missing the cm:versionable aspect, yet it has " + importableItem.getVersionEntries().size() + " versions.  Adding cm:versionable.");
+                if (log.isInfoEnabled()) log.info("Metadata for file '" + getFileName(importableItem.getHeadRevision().getContentFile()) + "' was missing the cm:versionable aspect, yet it has " + importableItem.getVersionEntries().size() + " versions.  Adding cm:versionable aspect.");
                 metadata.addAspect(ContentModel.ASPECT_VERSIONABLE);
             }
                     
             result = importContentVersions(nodeRef, importableItem, inPlaceImport);
         }
         
-        if (log.isDebugEnabled()) log.debug("Creating head revision of node " + nodeRef.toString());
+        ImportableItem.ContentAndMetadata headRevision = importableItem.getHeadRevision();
         
-        importContentAndMetadata(nodeRef, importableItem.getHeadRevision(), inPlaceImport, metadata);
+        if (headRevision.contentFileExists() || headRevision.metadataFileExists())
+        {
+            if (log.isDebugEnabled()) log.debug("Creating head revision of node '" + String.valueOf(nodeRef) + "'.");
+            
+            importContentAndMetadata(nodeRef, headRevision, inPlaceImport, metadata);
+            
+            if (metadata.getAspects().contains(ContentModel.ASPECT_VERSIONABLE))
+            {
+                // Stamp the final version again, to workaround the Share bug whereby versions that aren't stamped as a version don't show up
+                // Note: this will result in the final version being duplicated in Explorer, but no one should be using that...
+                Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
+                versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                versionService.createVersion(nodeRef, versionProperties);
+            }
+        }
+        else
+        {
+            if (log.isDebugEnabled()) log.debug("No head revision for node '" + String.valueOf(nodeRef) + "'.");
+        }
         
         return(result);
     }
     
     
-    private final int importContentVersions(final NodeRef          nodeRef,
-                                            final ImportableItem   importableItem,
-                                            final boolean          inPlaceImport)
+    private final int importContentVersions(final NodeRef        nodeRef,
+                                            final ImportableItem importableItem,
+                                            final boolean        inPlaceImport)
+        throws InterruptedException
     {
-        int result = 0;
+        int result               = 0;
+        int previousMajorVersion = 0;
         
         for (final ImportableItem.VersionedContentAndMetadata versionEntry : importableItem.getVersionEntries())
         {
+            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            
             Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
-            MetadataLoader.Metadata   metadata          = loadMetadata(versionEntry);
+            MetadataLoader.Metadata   metadata          = loadMetadata(importableItem.getFileType(), versionEntry);
             
             importContentAndMetadata(nodeRef, versionEntry, inPlaceImport, metadata);
 
-            if (log.isDebugEnabled()) log.debug("Creating v" + String.valueOf(versionEntry.getVersion()) + " of node '" + nodeRef.toString() + "' (note: version label in Alfresco will not be the same - it is not currently possible to explicitly force a particular version label).");
+            if (log.isDebugEnabled()) log.debug("Creating v" + String.valueOf(versionEntry.getVersionLabel()) + " of node '" + String.valueOf(nodeRef) + "' (note: version label in Alfresco will not be the same - it is not currently possible to explicitly force a particular version label - see https://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=85).");
   
             // Note: PROP_VERSION_LABEL is a "reserved" property, and cannot be modified by custom code.
             // In other words, we can't use the version label on disk as the version label in Alfresco.  :-(
             // See: http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=85
-//            versionProperties.put(ContentModel.PROP_VERSION_LABEL.toPrefixString(), String.valueOf(versionEntry.getVersion()));
-            versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);   // Load every version as a major version for now - see http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=84
+//            versionProperties.put(ContentModel.PROP_VERSION_LABEL.toPrefixString(), versionEntry.getVersionLabel());
+            
+            if (versionEntry.getMajorVersion() > previousMajorVersion)
+            {
+                versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                previousMajorVersion = versionEntry.getMajorVersion();
+            }
+            else
+            {
+                versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+            }
+            
             versionService.createVersion(nodeRef, versionProperties);
             
             result += metadata.getProperties().size() + 4;  // Add 4 for "standard" metadata properties read from filesystem
@@ -609,41 +692,53 @@ public abstract class AbstractBulkFilesystemImporter
                                                 final ImportableItem.ContentAndMetadata contentAndMetadata,
                                                 final boolean                           inPlaceImport,
                                                 final MetadataLoader.Metadata           metadata)
+        throws InterruptedException
     {
         // Write the content of the file
-        if (contentAndMetadata.contentFileExists())
+        if (contentAndMetadata.contentFileExists() ||
+            contentAndMetadata.metadataFileExists())
         {
-            importStatus.setCurrentFileBeingProcessed(getFileName(contentAndMetadata.getContentFile()));
-            
-            if (inPlaceImport)
+            if (contentAndMetadata.contentFileExists())
             {
-                // It's already in a content store, so simply "link" it into the repository
-                if (log.isDebugEnabled()) log.debug("Linking ContentStore file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
+                importStatus.setCurrentFileBeingProcessed(getFileName(contentAndMetadata.getContentFile()));
                 
-                metadata.addProperty(ContentModel.PROP_CONTENT, buildContentProperty(contentAndMetadata));
+                if (inPlaceImport)
+                {
+                    // It's already in a content store, so simply "link" it into the repository
+                    if (log.isDebugEnabled()) log.debug("Linking ContentStore file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + String.valueOf(nodeRef) + "'.");
+                    
+                    metadata.addProperty(ContentModel.PROP_CONTENT, buildContentProperty(contentAndMetadata));
+                }
+                else
+                {
+                    // File is outside a content store, so stream it into the repository
+                    if (log.isDebugEnabled()) log.debug("Streaming contents of file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + String.valueOf(nodeRef) + "'.");
+  
+                    ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT, true);
+                    writer.guessMimetype(contentAndMetadata.getParentFileName());  // Note: we base the MIME type on the name of the parent file, since the tool doesn't (yet) support a version history of content files with heterogeneous MIME types (since that would break the filename naming convention used to associate versions to parent files).
+                    writer.guessEncoding();
+                    writer.putContent(contentAndMetadata.getContentFile());
+                }
             }
             else
             {
-                // File is outside a content store, so stream it into the repository
-                if (log.isDebugEnabled()) log.debug("Streaming contents of file '" + getFileName(contentAndMetadata.getContentFile()) + "' into node '" + nodeRef.toString() + "'.");
-                
-                ContentWriter writer = fileFolderService.getWriter(nodeRef);
-                writer.putContent(contentAndMetadata.getContentFile());
+                if (log.isDebugEnabled()) log.debug("No content to stream into node '" + String.valueOf(nodeRef) + "' - importing metadata only.");
             }
+            
+            // Attach aspects and set all properties
+            importImportableItemMetadata(nodeRef, contentAndMetadata.getContentFile(), metadata);
         }
         else
         {
-            if (log.isDebugEnabled()) log.debug("No content to stream into node '" + nodeRef.toString() + "' - importing metadata only.");
+            if (log.isDebugEnabled()) log.debug("No content or metadata to write to node '" + String.valueOf(nodeRef) + "' - skipping.");
         }
-        
-        // Attach aspects and set all properties
-        importImportableItemMetadata(nodeRef, contentAndMetadata.getContentFile(), metadata);
     }
     
     
     private final void importImportableItemDirectory(final NodeRef                 nodeRef,
                                                      final ImportableItem          importableItem,
                                                      final MetadataLoader.Metadata metadata)
+        throws InterruptedException
     {
         if (importableItem.hasVersionEntries())
         {
@@ -654,14 +749,60 @@ public abstract class AbstractBulkFilesystemImporter
         importImportableItemMetadata(nodeRef, importableItem.getHeadRevision().getContentFile(), metadata);
     }
     
+    // Workaround for https://issues.alfresco.com/jira/browse/MNT-11702
+    private final String normaliseFilename(final String filename)
+    {
+        String result = null;
+        
+        if (filename != null)
+        {
+            result = filename.replaceAll("\\\\", "/");  // Normalise all path separators to Unix-style (note: quadruple escaping is indeed required!)
+            result = result.replaceAll("/+", "/");      // De-dupe duplicate separators
+            
+            // Ensure case insensitive comparison on Windows
+            if (SystemUtils.IS_OS_WINDOWS)
+            {
+                result = result.toLowerCase();
+            }
+        }
+        
+        return(result);
+    }
+    
     
     private final ContentData buildContentProperty(final ImportableItem.ContentAndMetadata contentAndMetadata)
     {
         ContentData result = null;
         
-        String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + contentAndMetadata.getContentFile().getAbsolutePath().replace(configuredContentStore.getRootLocation() + OS_FILE_SEPARATOR, "");
+        String normalisedFilename         = normaliseFilename(contentAndMetadata.getContentFile().getAbsolutePath());
+        String normalisedContentStoreRoot = normaliseFilename(configuredContentStore.getRootLocation());
+        
+        // Ensure content store root ends with a single / character
+        if (!normalisedContentStoreRoot.endsWith("/"))
+        {
+            normalisedContentStoreRoot = normalisedContentStoreRoot + "/";
+        }
+        
+        if (log.isDebugEnabled()) log.debug("Constructing content URL for '" + normalisedFilename + "'. Content store is located at '" + normalisedContentStoreRoot + "'.");
+        
+        // If, after normalisation, the filename doesn't start with the content store root, something is badly wrong.
+        if (!normalisedFilename.startsWith(normalisedContentStoreRoot))
+        {
+            throw new IllegalStateException("File '" + normalisedFilename + "' is not within the contentstore '" + normalisedContentStoreRoot + "', so it can't be in-place imported.");
+        }
+        
+        String contentStoreRelativeFilename = normalisedFilename.substring(normalisedContentStoreRoot.length());
+
+        String contentUrl = FileContentStore.STORE_PROTOCOL + ContentStore.PROTOCOL_DELIMITER + contentStoreRelativeFilename;
         String mimeType   = mimeTypeService.guessMimetype(contentAndMetadata.getContentFile().getName());
         String encoding   = DEFAULT_TEXT_ENCODING;
+
+        if (log.isDebugEnabled()) log.debug("Content URL is '" + contentUrl + "'.");
+        
+        if (contentUrl.length() > MAX_CONTENT_URL_LENGTH)
+        {
+            throw new RuntimeException("The content URL '" + contentUrl + "' for file '" + getFileName(contentAndMetadata.getContentFile()) + "' is " + contentUrl.length() + " characters long, but the maximum allowed for an in-place import is " + MAX_CONTENT_URL_LENGTH + " characters.");
+        }
                 
         if (mimeTypeService.isText(mimeType))
         {
@@ -677,6 +818,7 @@ public abstract class AbstractBulkFilesystemImporter
     private final void importImportableItemMetadata(final NodeRef                 nodeRef,
                                                     final File                    parentFile,
                                                     final MetadataLoader.Metadata metadata)
+        throws InterruptedException
     {
         importStatus.setCurrentFileBeingProcessed(getFileName(parentFile) + " (metadata)");
 
@@ -685,7 +827,9 @@ public abstract class AbstractBulkFilesystemImporter
         {
             for (final QName aspect : metadata.getAspects())
             {
-                if (log.isDebugEnabled()) log.debug("Attaching aspect '" + aspect.toString() + "' to node '" + nodeRef.toString() + "'.");
+                if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+                
+                if (log.isDebugEnabled()) log.debug("Attaching aspect '" + String.valueOf(aspect) + "' to node '" + String.valueOf(nodeRef) + "'.");
                 
                 nodeService.addAspect(nodeRef, aspect, null);  // Note: we set the aspect's properties separately, hence null for the third parameter
             }
@@ -694,7 +838,7 @@ public abstract class AbstractBulkFilesystemImporter
         // Set property values for both the type and any aspect(s)
         if (metadata.getProperties() != null)
         {
-            if (log.isDebugEnabled()) log.debug("Adding properties to node '" + nodeRef.toString() + "':\n" + mapToString(metadata.getProperties()));
+            if (log.isDebugEnabled()) log.debug("Adding properties to node '" + String.valueOf(nodeRef) + "':\n" + mapToString(metadata.getProperties()));
             
             try
             {
@@ -724,25 +868,24 @@ public abstract class AbstractBulkFilesystemImporter
     {
         final PermissionService permissionService = serviceRegistry.getPermissionService();
         
-        
         if (target == null)
         {
             throw new RuntimeException("target must not be null.");
         }
         
-        if (!fileFolderService.exists(target))
+        if (!nodeService.exists(target))
         {
-            throw new RuntimeException("Target '" + target.toString() + "' doesn't exist.");
+            throw new RuntimeException("Target '" + String.valueOf(target) + "' doesn't exist.");
         }
         
         if (AccessStatus.DENIED.equals(permissionService.hasPermission(target, PermissionService.ADD_CHILDREN)))
         {
-            throw new RuntimeException("Target '" + target.toString() + "' is not writeable.");
+            throw new RuntimeException("Target '" + String.valueOf(target) + "' is not writeable.");
         }
         
-        if (!fileFolderService.getFileInfo(target).isFolder())
+        if (!dictionaryService.isSubClass(nodeService.getType(target), ContentModel.TYPE_FOLDER))
         {
-            throw new RuntimeException("Target '" + target.toString() + "' is not a space.");
+            throw new RuntimeException("Target '" + String.valueOf(target) + "' is not a space.");
         }
     }
     
@@ -810,7 +953,7 @@ public abstract class AbstractBulkFilesystemImporter
             
             try
             {
-                pathElements = fileFolderService.getNamePath(null, nodeRef);
+                pathElements = fileFolderService.getNamePath(null, nodeRef);   // Note: violates issue #132, but allowable in this case since this is a R/O method without an obvious alternative
 
                 if (pathElements != null && pathElements.size() > 0)
                 {
@@ -835,18 +978,21 @@ public abstract class AbstractBulkFilesystemImporter
     }
     
     
-    private final MetadataLoader.Metadata loadMetadata(final ImportableItem.ContentAndMetadata contentAndMetadata)
+    private final MetadataLoader.Metadata loadMetadata(final ImportableItem.FileType           fileType,
+                                                       final ImportableItem.ContentAndMetadata contentAndMetadata)
     {
         MetadataLoader.Metadata result = new MetadataLoader.Metadata();
-        
-        // Load "standard" metadata from the filesystem
+
+        result.setType(ImportableItem.FileType.DIRECTORY.equals(fileType) ? ContentModel.TYPE_FOLDER : ContentModel.TYPE_CONTENT);  // Default to content (file)
+        result.setParentAssoc(ContentModel.ASSOC_CONTAINS);  // Default to cm:contains child association
+
+        // Load "standard" metadata from the filesystem, if a content file exists
         if (contentAndMetadata != null && contentAndMetadata.contentFileExists())
         {
             final String filename = contentAndMetadata.getContentFile().getName().trim().replaceFirst(DirectoryAnalyser.VERSION_SUFFIX_REGEX, "");  // Strip off the version suffix (if any)
             final Date   modified = new Date(contentAndMetadata.getContentFile().lastModified());
-            final Date   created  = modified;    //TODO: determine proper file creation time (awaiting JDK 1.7 NIO2 library)
+            final Date   created  = modified;    // TODO: determine proper file creation time (awaiting JDK 1.7 NIO2 library)
             
-            result.setType(ImportableItem.FileType.FILE.equals(contentAndMetadata.getContentFileType()) ? ContentModel.TYPE_CONTENT : ContentModel.TYPE_FOLDER);
             result.addProperty(ContentModel.PROP_NAME,     filename);
             result.addProperty(ContentModel.PROP_TITLE,    filename);
             result.addProperty(ContentModel.PROP_CREATED,  created);
@@ -856,6 +1002,13 @@ public abstract class AbstractBulkFilesystemImporter
         if (metadataLoader != null)
         {
             metadataLoader.loadMetadata(contentAndMetadata, result);
+        }
+        
+        // If there was no name in the metadata, add the parent file's name
+        // This only occurs for metadata-only nodes that don't explicitly set the cm:name property
+        if (!result.getProperties().containsKey(ContentModel.PROP_NAME))
+        {
+            result.addProperty(ContentModel.PROP_NAME, contentAndMetadata.getParentFileName());
         }
         
         return(result);
@@ -911,13 +1064,15 @@ public abstract class AbstractBulkFilesystemImporter
      * Returns the name of the given importable item.  This is the final name of the item, as it would appear in the repository,
      * after metadata renames are taken into account.
      * 
-     * @param importableItem The importableItem with which to 
+     * @param importableItem The importableItem whose name we want to retrieve. 
      * @param metadata 
      * @return
      */
     protected final String getImportableItemName(final ImportableItem importableItem, final MetadataLoader.Metadata metadata)
     {
         String result = null;
+        
+        if (log.isDebugEnabled()) log.debug("Determining name of importable item:\n" + String.valueOf(importableItem) + "\n\nWith metadata:\n" + String.valueOf(metadata));
 
         // Step 1: attempt to get name from metadata
         if (metadata != null)
@@ -940,6 +1095,17 @@ public abstract class AbstractBulkFilesystemImporter
                                                        (MetadataLoader.METADATA_SUFFIX.length() + metadataLoader.getMetadataFileExtension().length()));
             }
         }
+        
+        // Step 3: read the parent filename from the item itself
+        if (result         == null &&
+            importableItem != null)
+        {
+            result = importableItem.getParentFilename();
+        }
+        
+        if (log.isDebugEnabled()) log.debug("Name is: " + result);
+        
+        // ####TODO: TAKE METADATA RENAMES IN VERSION HISTORY ONLY ITEMS INTO ACCOUNT!!
                 
         return(result);
     }

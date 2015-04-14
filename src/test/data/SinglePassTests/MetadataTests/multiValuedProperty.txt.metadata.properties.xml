@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+  <entry key="separator"> # </entry>
+  <entry key="aspects">cm:versionable # cm:taggable</entry>
+  <entry key="cm:title">Multi-valued properties.</entry>
+  <entry key="cm:description">A file with multi-valued properties, using a custom separator.</entry>
+  <entry key="cm:created">1901-01-01T12:34:56.789+10:00</entry>
+  <!-- Note: The following needs to be set to the NodeRefs of two tags in your Alfresco installation -->
+  <entry key="cm:taggable">workspace://SpacesStore/eab0c75d-9ddc-4680-af85-754e3183205b # workspace://SpacesStore/e5f127c3-df80-40da-97e4-f47a403f1fb8</entry>
+</properties>

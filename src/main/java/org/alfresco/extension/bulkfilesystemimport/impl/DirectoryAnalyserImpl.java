@@ -1,26 +1,21 @@
 /*
- * Copyright (C) 2005-2011 Alfresco Software Limited.
+ * Copyright (C) 2007-2013 Peter Monks.
+ *               2010-2011 Ryan McVeigh Fixed issues #18 and #62.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
-
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-
- * As a special exception to the terms and conditions of version 2.0 of 
- * the GPL, you may redistribute this Program in connection with Free/Libre 
- * and Open Source Software ("FLOSS") applications as described in Alfresco's 
- * FLOSS exception.  You should have received a copy of the text describing 
- * the FLOSS exception, and it is also available here: 
- * http://www.alfresco.com/legal/licensing"
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ * This file is part of an unsupported extension to Alfresco.
+ * 
  */
 
 package org.alfresco.extension.bulkfilesystemimport.impl;
@@ -31,14 +26,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.alfresco.extension.bulkfilesystemimport.AnalysedDirectory;
 import org.alfresco.extension.bulkfilesystemimport.DirectoryAnalyser;
 import org.alfresco.extension.bulkfilesystemimport.ImportableItem;
@@ -76,6 +69,7 @@ public final class DirectoryAnalyserImpl
      * @see org.alfresco.extension.bulkfilesystemimport.DirectoryAnalyser#analyseDirectory(java.io.File)
      */
     public AnalysedDirectory analyseDirectory(final File directory)
+        throws InterruptedException
     {
         final AnalysedDirectory        result          = new AnalysedDirectory();
         final Map<File,ImportableItem> importableItems = new HashMap<File,ImportableItem>();
@@ -89,10 +83,12 @@ public final class DirectoryAnalyserImpl
         end = System.nanoTime();
         if (log.isTraceEnabled()) log.trace("List directory took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
 
-        start = System.nanoTime();
         // Build up the list of ImportableItems from the directory listing
+        start = System.nanoTime();
         for (final File file : result.originalListing)
         {
+            if (importStatus.isStopping() || Thread.currentThread().isInterrupted()) throw new InterruptedException(Thread.currentThread().getName() + " was interrupted.  Terminating early.");
+            
             if (file.canRead())
             {
                 if (isVersionFile(file))
@@ -121,7 +117,7 @@ public final class DirectoryAnalyserImpl
             }
             else
             {
-                if (log.isWarnEnabled()) log.warn("Skipping unreadable file '" + AbstractBulkFilesystemImporter.getFileName(file) + "'.");
+                if (log.isWarnEnabled()) log.warn("Skipping unreadable file/directory '" + AbstractBulkFilesystemImporter.getFileName(file) + "'.");
                 
                 importStatus.incrementNumberOfUnreadableEntries();
             }
@@ -131,9 +127,8 @@ public final class DirectoryAnalyserImpl
 
         result.importableItems = new ArrayList<ImportableItem>(importableItems.values());
 
+        // Finally, remove any items from the list that aren't valid
         start = System.nanoTime();
-        // Finally, remove any items from the list that aren't valid (don't have either a
-        // contentFile or a metadataFile)
         Iterator<ImportableItem> iter = result.importableItems.iterator();
 
         while (iter.hasNext())
@@ -145,6 +140,7 @@ public final class DirectoryAnalyserImpl
                 iter.remove();
             }
         }
+        
         end = System.nanoTime();
         if (log.isTraceEnabled()) log.trace("Filter invalid importable items took: " + (float)(end - start) / (1000 * 1000 * 1000 )+ "s");
 
@@ -191,8 +187,8 @@ public final class DirectoryAnalyserImpl
         }
 
         ImportableItem                             importableItem = findOrCreateImportableItem(importableItems, parentContentFile);
-        int                                        version        = getVersionNumber(versionFile);
-        ImportableItem.VersionedContentAndMetadata versionEntry   = findOrCreateVersionEntry(importableItem, version);
+        String                                     versionLabel   = getVersionLabel(versionFile);
+        ImportableItem.VersionedContentAndMetadata versionEntry   = findOrCreateVersionEntry(importableItem, versionLabel);
 
         if (isContentVersion)
         {
@@ -233,7 +229,7 @@ public final class DirectoryAnalyserImpl
         // We didn't find it, so create it
         if (result == null)
         {
-            result = new ImportableItem();
+            result = new ImportableItem(contentFile.getName());
             result.getHeadRevision().setContentFile(contentFile);
             importableItems.put(contentFile, result);
         }
@@ -242,13 +238,13 @@ public final class DirectoryAnalyserImpl
     }
 
 
-    private ImportableItem.VersionedContentAndMetadata findOrCreateVersionEntry(final ImportableItem importableItem, final int version)
+    private ImportableItem.VersionedContentAndMetadata findOrCreateVersionEntry(final ImportableItem importableItem, final String versionLabel)
     {
-        ImportableItem.VersionedContentAndMetadata result = findVersionEntry(importableItem, version);
+        ImportableItem.VersionedContentAndMetadata result = importableItem.getVersionEntry(versionLabel);
 
         if (result == null)
         {
-            result = importableItem.new VersionedContentAndMetadata(version);
+            result = importableItem.new VersionedContentAndMetadata(versionLabel);
             
             importableItem.addVersionEntry(result);
         }
@@ -257,32 +253,9 @@ public final class DirectoryAnalyserImpl
     }
 
 
-    private ImportableItem.VersionedContentAndMetadata findVersionEntry(final ImportableItem importableItem, final int version)
+    private String getVersionLabel(final File versionFile)
     {
-        ImportableItem.VersionedContentAndMetadata result = null;
-
-        // Note: it would be better to store VersionEntries in a Map as well, and convert to a list later on, but in most
-        // cases version histories are small enough that we can get away with the inefficiencies of finding items in lists.
-        // See http://code.google.com/p/alfresco-bulk-filesystem-import/issues/detail?id=91 for a related problem.
-        if (importableItem.hasVersionEntries())
-        {
-            for (final ImportableItem.VersionedContentAndMetadata versionEntry : importableItem.getVersionEntries())
-            {
-                if (version == versionEntry.getVersion())
-                {
-                    result = versionEntry;
-                    break;
-                }
-            }
-        }
-
-        return(result);
-    }
-
-
-    private int getVersionNumber(final File versionFile)
-    {
-        int result = -1;
+        String result = null;
 
         if (!isVersionFile(versionFile))
         {
@@ -290,18 +263,26 @@ public final class DirectoryAnalyserImpl
         }
 
         Matcher matcher = VERSION_SUFFIX_PATTERN.matcher(versionFile.getName());
-        String versionStr = null;
 
         if (matcher.matches())
         {
-            versionStr = matcher.group(1);
+            String majorVersionStr = matcher.group(2);
+            String minorVersionStr = matcher.group(4);
+            
+            int majorVersion = Integer.parseInt(majorVersionStr);
+            int minorVersion = 0;
+            
+            if (minorVersionStr != null)
+            {
+                minorVersion = Integer.parseInt(minorVersionStr);
+            }
+
+            result = majorVersion + "." + minorVersion;
         }
         else
         {
-            throw new IllegalStateException("WTF?!?!?"); // ####TODO!!!!
+            throw new IllegalStateException(AbstractBulkFilesystemImporter.getFileName(versionFile) + " has a malformed version label."); 
         }
-
-        result = Integer.parseInt(versionStr);
 
         return(result);
     }

@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util-3.0.xsd">  
+
+  <!-- Java-backed Web Scripts for the bulk filesystem importer -->
+
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.ui.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportUIWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-importer" /> 
+  </bean>
+
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.initiate.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="ServiceRegistry" />
+    <constructor-arg index="1" ref="repositoryHelper" />
+    <constructor-arg index="2" ref="bfsit-importer" /> 
+  </bean>
+
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.status.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportStatusWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-importer" />
+  </bean>
+  
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.stop.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemImportStopWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-importer" />
+  </bean>
+  
+  <bean id="webscript.org.alfresco.extension.bulkfilesystemimport.datadictionary.get"
+        class="org.alfresco.extension.bulkfilesystemimport.webscripts.BulkFilesystemDataDictionaryWebScript"
+        parent="webscript">
+    <constructor-arg index="0" ref="bfsit-data-dictionary-builder" />
+  </bean>
+  
+</beans>
