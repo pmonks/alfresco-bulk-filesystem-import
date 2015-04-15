@@ -9,4 +9,4 @@ In the meantime, here are some links that may be useful:
 * [Ohloh stats](https://www.ohloh.net/p/alfresco-bulk-filesystem-import) - note: not yet updated to read from github
 * [Blog post describing the approach](http://blogs.alfresco.com/wp/pmonks/2009/10/22/bulk-import-from-a-filesystem/) (very out of date at this point)
 
-Finally, development of v2.0 of the tool moved to github some time ago, and is being managed as a [separate project](https://github.com/pmonks/alfresco-bulk-import).  This project will remain in place for those who wish to use access older versions of the tool (e.g. those who are still using Alfresco v4.x or earlier).
+Finally, development of v2.0 of the tool moved to github some time ago, and is being managed as a [separate project](https://github.com/pmonks/alfresco-bulk-import).  This project will remain in place for those who wish to access older versions of the tool (e.g. those who are still using Alfresco v4.x or earlier).
