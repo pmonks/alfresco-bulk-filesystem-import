@@ -1,4 +1,4 @@
-Until [issue #155](https://github.com/pmonks/alfresco-bulk-filesystem-import/issues/155) is fixed, please refer to the [Google Code project](http://code.google.com/p/alfresco-bulk-filesystem-import/).
+Until [issue #155](https://github.com/pmonks/alfresco-bulk-filesystem-import/issues/155) is addressed, please refer to the [Google Code project](http://code.google.com/p/alfresco-bulk-filesystem-import/) for documentation etc.
 
 In the meantime, here are some links that may be useful:
 * [Alfresco](http://www.alfresco.com/)
