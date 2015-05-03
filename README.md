@@ -1,6 +1,7 @@
 Until [issue #155](https://github.com/pmonks/alfresco-bulk-filesystem-import/issues/155) is addressed, please refer to the [Google Code project](http://code.google.com/p/alfresco-bulk-filesystem-import/) for documentation etc.
 
 In the meantime, here are some links that may be useful:
+* [Binary downloads](https://github.com/pmonks/alfresco-bulk-filesystem-import/releases)
 * [Alfresco](http://www.alfresco.com/)
 * [Mailing list](http://groups.google.com/group/alfresco-bulk-filesystem-import)
 * [Google+ Community](https://plus.google.com/u/0/communities/109819088324399315209) - now with added tumbleweeds!
