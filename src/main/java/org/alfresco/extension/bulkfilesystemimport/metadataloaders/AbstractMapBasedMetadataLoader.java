@@ -58,6 +58,7 @@ abstract class AbstractMapBasedMetadataLoader
     private final static String PROPERTY_NAME_NAMESPACE    = "namespace";
     private final static String PROPERTY_NAME_PARENT_ASSOC = "parentAssociation";
     private final static String PROPERTY_NAME_SEPARATOR    = "separator";
+    private final static String PROPERTY_VERSION_COMMENT   = "versionComment";
 
     private final static String DEFAULT_SEPARATOR = ",";
     
@@ -165,6 +166,13 @@ abstract class AbstractMapBasedMetadataLoader
                         
                         metadata.setParentAssoc(parentAssoc);
                         metadataProperties.remove(PROPERTY_NAME_PARENT_ASSOC);
+                    }
+                    
+                    if (metadataProperties.containsKey(PROPERTY_VERSION_COMMENT)) {
+                      String versionComment = (String)metadataProperties.get(PROPERTY_VERSION_COMMENT);
+                      
+                      metadata.setVersionComment(versionComment);
+                      metadataProperties.remove(PROPERTY_VERSION_COMMENT);
                     }
                     
                     // Treat everything else as a metadata property

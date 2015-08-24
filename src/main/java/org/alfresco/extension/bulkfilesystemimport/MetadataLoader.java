@@ -75,6 +75,7 @@ public interface MetadataLoader
         private String                   namespace;
         private QName                    parentAssoc;
         private Map<QName, Serializable> properties;
+        private String                   versionComment;
         
         
         public Metadata()
@@ -84,9 +85,9 @@ public interface MetadataLoader
             namespace   = NamespaceService.CONTENT_MODEL_1_0_URI;
             parentAssoc = ContentModel.ASSOC_CONTAINS;
             properties  = new HashMap<QName, Serializable>(); 
+            versionComment = null;
         }
         
-
         /**
          * @return the type
          */
@@ -198,6 +199,17 @@ public interface MetadataLoader
             properties.put(property, value);
         }
         
+        /**
+         * Adds a version comment to this metadata object
+         * @param versionComment - A version comment, may be null for no version comment
+         */
+        public void setVersionComment(String versionComment) {
+          this.versionComment = versionComment;
+        }
+        
+        public String getVersionComment() {
+          return versionComment;
+        }
         
         @Override
         public String toString()
@@ -207,6 +219,7 @@ public interface MetadataLoader
                    .append("parentAssoc", parentAssoc)
                    .append("aspects",     aspects)
                    .append("properties",  properties)
+                   .append("versionComment",  versionComment)
                    .toString());
         }
         

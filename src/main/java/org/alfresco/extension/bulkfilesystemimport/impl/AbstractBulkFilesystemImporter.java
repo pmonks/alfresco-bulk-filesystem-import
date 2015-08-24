@@ -37,7 +37,6 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.lang.SystemUtils;
-
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
@@ -61,6 +60,7 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.security.AccessStatus;
 import org.alfresco.service.cmr.security.PermissionService;
+import org.alfresco.service.cmr.version.Version;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
 import org.alfresco.service.namespace.QName;
@@ -633,6 +633,10 @@ public abstract class AbstractBulkFilesystemImporter
                 // Note: this will result in the final version being duplicated in Explorer, but no one should be using that...
                 Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
                 versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                String versionComment = metadata.getVersionComment();
+                if (versionComment != null) {
+                  versionProperties.put(Version.PROP_DESCRIPTION, versionComment);
+                }
                 versionService.createVersion(nodeRef, versionProperties);
             }
         }
@@ -677,6 +681,11 @@ public abstract class AbstractBulkFilesystemImporter
             else
             {
                 versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+            }
+            
+            String versionComment = metadata.getVersionComment();
+            if (versionComment != null) {
+              versionProperties.put(Version.PROP_DESCRIPTION, versionComment);
             }
             
             versionService.createVersion(nodeRef, versionProperties);
