@@ -42,13 +42,21 @@
     <version>1.1.1</version>
   </parent>
 
+  <repositories>
+    <repository>
+      <id>alfresco-public</id>
+      <url>https://artifacts.alfresco.com/nexus/content/groups/public/</url>
+    </repository>
+  </repositories>
+
   <properties>
     <version.java>1.6</version.java>
     <version.compiler-plugin>3.1</version.compiler-plugin>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <alfresco.groupId>org.alfresco</alfresco.groupId>
+    <alfresco.version>4.2.f</alfresco.version>
     <alfresco-community.version>4.2.f</alfresco-community.version>
-    <alfresco-enterprise.version>4.2.1</alfresco-enterprise.version>
+    <alfresco-enterprise.version>4.2.f</alfresco-enterprise.version>
     <alfresco.client.war.groupId>${alfresco.groupId}</alfresco.client.war.groupId>
     <alfresco.client.war.version>${alfresco.version}</alfresco.client.war.version>
     <project.build.finalName>${project.build.finalName}-${buildnumber}.amp</project.build.finalName>
