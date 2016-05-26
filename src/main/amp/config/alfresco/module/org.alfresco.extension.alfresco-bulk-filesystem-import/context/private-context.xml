@@ -90,6 +90,7 @@
     <property name="importFilters"     ref="bfsit-import-filters" />
     <property name="metadataLoader"    ref="bfsit-metadata-loader" />
     <property name="batchWeight"       value="${alfresco-bulk-filesystem-import.batch.weight}" />
+    <property name="extractMetadata"   value="${alfresco-bulk-filesystem-import.metadataextraction.enabled}" />
   </bean>
   
   <!-- An auto-sized thread pool - coreSize = number of processors, maxSize = coreSize * 2 -->

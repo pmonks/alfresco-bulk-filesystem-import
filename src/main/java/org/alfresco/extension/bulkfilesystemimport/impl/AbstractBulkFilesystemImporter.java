@@ -74,6 +74,8 @@ import org.alfresco.extension.bulkfilesystemimport.MetadataLoader;
 import org.alfresco.extension.bulkfilesystemimport.ImportFilter;
 import org.alfresco.extension.bulkfilesystemimport.impl.BulkImportStatusImpl.NodeState;
 import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
+import org.alfresco.service.cmr.action.Action;
+import org.alfresco.service.cmr.action.ActionService;
 
 
 /**
@@ -110,6 +112,7 @@ public abstract class AbstractBulkFilesystemImporter
     private List<ImportFilter> importFilters     = null;
     private MetadataLoader     metadataLoader    = null;
     private int                batchWeight       = DEFAULT_BATCH_WEIGHT;
+    private boolean            extractMetadata   = false;
 
 
     protected AbstractBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
@@ -160,7 +163,10 @@ public abstract class AbstractBulkFilesystemImporter
             this.batchWeight = batchWeight;
         }
     }
-    
+
+    public void setExtractMetadata(final boolean extractMetadata) {
+      this.extractMetadata = extractMetadata;
+    }
 
     /**
      * @see org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter#bulkImport(java.io.File, org.alfresco.service.cmr.repository.NodeRef, boolean)
@@ -728,6 +734,17 @@ public abstract class AbstractBulkFilesystemImporter
                     writer.guessEncoding();
                     writer.putContent(contentAndMetadata.getContentFile());
                 }
+                
+              if (extractMetadata) {
+                //Run metadata extraction
+                if (log.isDebugEnabled()) log.debug("Extracting metadata for node '" + String.valueOf(nodeRef) + "'.");
+                ActionService actionService = serviceRegistry.getActionService();
+                Action extractMetadataAction = actionService.createAction("extract-metadata");
+                //extractMetadataAction.
+                actionService.executeAction(extractMetadataAction, nodeRef);
+              } else {
+                if (log.isDebugEnabled()) log.debug("Metadata extraction disabled.");
+              }
             }
             else
             {
