@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.alfresco.model.ContentModel;
+import org.alfresco.repo.version.VersionModel;
+import org.alfresco.service.cmr.version.VersionType;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -76,6 +78,7 @@ public interface MetadataLoader
         private QName                    parentAssoc;
         private Map<QName, Serializable> properties;
         private String                   versionComment;
+        private VersionType              versionType;
         
         
         public Metadata()
@@ -86,6 +89,7 @@ public interface MetadataLoader
             parentAssoc = ContentModel.ASSOC_CONTAINS;
             properties  = new HashMap<QName, Serializable>(); 
             versionComment = null;
+            versionType = null;
         }
         
         /**
@@ -210,6 +214,24 @@ public interface MetadataLoader
         public String getVersionComment() {
           return versionComment;
         }
+
+        public void setVersionType(VersionType versionType) {
+          this.versionType = versionType;
+        }
+        
+        public void setVersionType(String versionType) {
+          if ("major".equalsIgnoreCase(versionType)) {
+            setVersionType(VersionType.MAJOR);
+          } else if ("minor".equalsIgnoreCase(versionType)) {
+            setVersionType(VersionType.MINOR);
+          }
+        }
+
+        public VersionType getVersionType() {
+          return versionType;
+        }
+
+
         
         @Override
         public String toString()
@@ -220,6 +242,7 @@ public interface MetadataLoader
                    .append("aspects",     aspects)
                    .append("properties",  properties)
                    .append("versionComment",  versionComment)
+                   .append("versionType",  versionType)
                    .toString());
         }
         

@@ -59,7 +59,7 @@ abstract class AbstractMapBasedMetadataLoader
     private final static String PROPERTY_NAME_PARENT_ASSOC = "parentAssociation";
     private final static String PROPERTY_NAME_SEPARATOR    = "separator";
     private final static String PROPERTY_VERSION_COMMENT   = "versionComment";
-
+    private final static String PROPERTY_VERSION_TYPE      = "versionType";
     private final static String DEFAULT_SEPARATOR = ",";
     
     protected final NamespaceService  namespaceService;
@@ -173,6 +173,13 @@ abstract class AbstractMapBasedMetadataLoader
                       
                       metadata.setVersionComment(versionComment);
                       metadataProperties.remove(PROPERTY_VERSION_COMMENT);
+                    }
+                    
+                    if (metadataProperties.containsKey(PROPERTY_VERSION_TYPE)) {
+                      String versionType = (String)metadataProperties.get(PROPERTY_VERSION_TYPE);
+                      
+                      metadata.setVersionType(versionType);
+                      metadataProperties.remove(PROPERTY_VERSION_TYPE);
                     }
                     
                     // Treat everything else as a metadata property

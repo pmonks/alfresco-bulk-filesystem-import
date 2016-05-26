@@ -638,12 +638,18 @@ public abstract class AbstractBulkFilesystemImporter
                 // Stamp the final version again, to workaround the Share bug whereby versions that aren't stamped as a version don't show up
                 // Note: this will result in the final version being duplicated in Explorer, but no one should be using that...
                 Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
-                versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                VersionType versionType = metadata.getVersionType();
+                if (VersionType.MINOR.equals(versionType)) {
+                  versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+                } else {
+                  versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                }
                 String versionComment = metadata.getVersionComment();
                 if (versionComment != null) {
                   versionProperties.put(Version.PROP_DESCRIPTION, versionComment);
                 }
                 versionService.createVersion(nodeRef, versionProperties);
+                
             }
         }
         else
