@@ -37,7 +37,6 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.lang.SystemUtils;
-
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.ContentStore;
 import org.alfresco.repo.content.encoding.ContentCharsetFinder;
@@ -61,6 +60,7 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.security.AccessStatus;
 import org.alfresco.service.cmr.security.PermissionService;
+import org.alfresco.service.cmr.version.Version;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
 import org.alfresco.service.namespace.QName;
@@ -74,6 +74,8 @@ import org.alfresco.extension.bulkfilesystemimport.MetadataLoader;
 import org.alfresco.extension.bulkfilesystemimport.ImportFilter;
 import org.alfresco.extension.bulkfilesystemimport.impl.BulkImportStatusImpl.NodeState;
 import org.alfresco.extension.bulkfilesystemimport.util.DataDictionaryBuilder;
+import org.alfresco.service.cmr.action.Action;
+import org.alfresco.service.cmr.action.ActionService;
 
 
 /**
@@ -110,6 +112,7 @@ public abstract class AbstractBulkFilesystemImporter
     private List<ImportFilter> importFilters     = null;
     private MetadataLoader     metadataLoader    = null;
     private int                batchWeight       = DEFAULT_BATCH_WEIGHT;
+    private boolean            extractMetadata   = false;
 
 
     protected AbstractBulkFilesystemImporter(final ServiceRegistry       serviceRegistry,
@@ -160,7 +163,10 @@ public abstract class AbstractBulkFilesystemImporter
             this.batchWeight = batchWeight;
         }
     }
-    
+
+    public void setExtractMetadata(final boolean extractMetadata) {
+      this.extractMetadata = extractMetadata;
+    }
 
     /**
      * @see org.alfresco.extension.bulkfilesystemimport.BulkFilesystemImporter#bulkImport(java.io.File, org.alfresco.service.cmr.repository.NodeRef, boolean)
@@ -632,8 +638,18 @@ public abstract class AbstractBulkFilesystemImporter
                 // Stamp the final version again, to workaround the Share bug whereby versions that aren't stamped as a version don't show up
                 // Note: this will result in the final version being duplicated in Explorer, but no one should be using that...
                 Map<String, Serializable> versionProperties = new HashMap<String, Serializable>();
-                versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                VersionType versionType = metadata.getVersionType();
+                if (VersionType.MINOR.equals(versionType)) {
+                  versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+                } else {
+                  versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MAJOR);
+                }
+                String versionComment = metadata.getVersionComment();
+                if (versionComment != null) {
+                  versionProperties.put(Version.PROP_DESCRIPTION, versionComment);
+                }
                 versionService.createVersion(nodeRef, versionProperties);
+                
             }
         }
         else
@@ -679,6 +695,11 @@ public abstract class AbstractBulkFilesystemImporter
                 versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
             }
             
+            String versionComment = metadata.getVersionComment();
+            if (versionComment != null) {
+              versionProperties.put(Version.PROP_DESCRIPTION, versionComment);
+            }
+            
             versionService.createVersion(nodeRef, versionProperties);
             
             result += metadata.getProperties().size() + 4;  // Add 4 for "standard" metadata properties read from filesystem
@@ -719,6 +740,17 @@ public abstract class AbstractBulkFilesystemImporter
                     writer.guessEncoding();
                     writer.putContent(contentAndMetadata.getContentFile());
                 }
+                
+              if (extractMetadata) {
+                //Run metadata extraction
+                if (log.isDebugEnabled()) log.debug("Extracting metadata for node '" + String.valueOf(nodeRef) + "'.");
+                ActionService actionService = serviceRegistry.getActionService();
+                Action extractMetadataAction = actionService.createAction("extract-metadata");
+                //extractMetadataAction.
+                actionService.executeAction(extractMetadataAction, nodeRef);
+              } else {
+                if (log.isDebugEnabled()) log.debug("Metadata extraction disabled.");
+              }
             }
             else
             {

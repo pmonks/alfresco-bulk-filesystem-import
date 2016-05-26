@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.alfresco.model.ContentModel;
+import org.alfresco.repo.version.VersionModel;
+import org.alfresco.service.cmr.version.VersionType;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -75,6 +77,8 @@ public interface MetadataLoader
         private String                   namespace;
         private QName                    parentAssoc;
         private Map<QName, Serializable> properties;
+        private String                   versionComment;
+        private VersionType              versionType;
         
         
         public Metadata()
@@ -84,9 +88,10 @@ public interface MetadataLoader
             namespace   = NamespaceService.CONTENT_MODEL_1_0_URI;
             parentAssoc = ContentModel.ASSOC_CONTAINS;
             properties  = new HashMap<QName, Serializable>(); 
+            versionComment = null;
+            versionType = null;
         }
         
-
         /**
          * @return the type
          */
@@ -198,6 +203,35 @@ public interface MetadataLoader
             properties.put(property, value);
         }
         
+        /**
+         * Adds a version comment to this metadata object
+         * @param versionComment - A version comment, may be null for no version comment
+         */
+        public void setVersionComment(String versionComment) {
+          this.versionComment = versionComment;
+        }
+        
+        public String getVersionComment() {
+          return versionComment;
+        }
+
+        public void setVersionType(VersionType versionType) {
+          this.versionType = versionType;
+        }
+        
+        public void setVersionType(String versionType) {
+          if ("major".equalsIgnoreCase(versionType)) {
+            setVersionType(VersionType.MAJOR);
+          } else if ("minor".equalsIgnoreCase(versionType)) {
+            setVersionType(VersionType.MINOR);
+          }
+        }
+
+        public VersionType getVersionType() {
+          return versionType;
+        }
+
+
         
         @Override
         public String toString()
@@ -207,6 +241,8 @@ public interface MetadataLoader
                    .append("parentAssoc", parentAssoc)
                    .append("aspects",     aspects)
                    .append("properties",  properties)
+                   .append("versionComment",  versionComment)
+                   .append("versionType",  versionType)
                    .toString());
         }
         
